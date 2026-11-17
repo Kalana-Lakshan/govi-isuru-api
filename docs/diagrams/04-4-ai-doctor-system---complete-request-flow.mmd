@@ -1,0 +1,31 @@
+sequenceDiagram
+    participant User as 👨‍🌾<br/>Web app
+    participant API as 🌐<br/>Express API
+    participant Credits as 💳<br/>Credit<br/>middleware
+    participant AI as 🤖<br/>AI service
+    participant DB as 🗄️<br/>MongoDB
+    participant Officer as 👮<br/>Officers
+
+    User->>API: POST /api/ai/predict/rice (photo, JWT)
+    API->>API: rate limit (40 per 10 min) · verify JWT
+    API->>Credits: deduct 25 credits
+    Credits->>DB: lazy daily reset, then -25
+    API->>AI: POST /v1/disease/predict?crop=rice&heatmap=true (X-API-Key)
+    AI-->>API: status, class, confidence, top3, heatmap, embedding, photo_quality
+    API->>API: add names, advice, severity from /v1/classes (cached 10 min)
+
+    alt BAD_PHOTO / NOT_A_PLANT / UNSUPPORTED_PLANT / WRONG_CROP
+        API->>DB: refund 25 credits
+        API-->>User: message + advice (wrong crop: one-tap "Diagnose as chili")
+    else UNKNOWN_DISEASE
+        API->>DB: save UnknownCase (photo, district, embedding)
+        API->>DB: 3 or more cases of this crop in the district in 7 days?
+        DB-->>API: yes, notify the district officers
+        API-->>User: "Sent to an agricultural officer" + case number
+        API-->>Officer: Notification "Possible new rice disease in DISTRICT"
+    else LOW_CONFIDENCE
+        API-->>User: possible causes, consult an officer
+    else KNOWN_DISEASE
+        API-->>User: diagnosis, Sinhala name, heatmap, treatment steps
+        User->>API: POST /api/reports (optional disease report, community alerts)
+    end

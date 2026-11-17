@@ -1,0 +1,18 @@
+graph TB
+    subgraph "Vercel (free)"
+        WEB["govi-isuru-web<br/>Next.js build"]
+    end
+    subgraph "Render (free web services, Docker)"
+        API["govi-isuru-api<br/>node:22-alpine, non-root<br/>health: /health"]
+        AI["govi-isuru-ai-service<br/>python slim + onnxruntime<br/>about 300 MB RAM · health: /ready"]
+    end
+    subgraph "MongoDB Atlas (M0 free)"
+        DB[("govi-isuru database")]
+    end
+    subgraph "Local development (docker compose in govi-isuru-api)"
+        LM[("mongo:7")] --- LA["api"] --- LAI["ai (built from ../govi-isuru-ai-service)"]
+    end
+    WEB -->|"API_URL"| API
+    API -->|"AI_SERVICE_URL + AI_SERVICE_KEY"| AI
+    API -->|"MONGO_URI"| DB
+    GH["GitHub Actions<br/>tests · build · Docker smoke test (all 3 repos)"] -.-> WEB & API & AI

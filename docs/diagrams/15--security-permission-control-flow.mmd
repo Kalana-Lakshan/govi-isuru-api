@@ -1,0 +1,61 @@
+graph TB
+    subgraph "REQUEST ENTRY"
+        REQ["📨 HTTP Request<br/>with JWT Token"]
+    end
+
+    subgraph "AUTHENTICATION LAYER"
+        AUTH_MID["🔑 authMiddleware.js<br/>1. Extract JWT<br/>2. Verify Signature<br/>3. Decode Payload"]
+        AUTH_OK{Token Valid?}
+    end
+
+    subgraph "AUTHORIZATION LAYER"
+        ROLE_CHECK["👤 Check User Role<br/>- farmer<br/>- officer<br/>- buyer<br/>- admin"]
+        PERMISSION["🔐 Route Protection<br/>Some routes require<br/>specific roles"]
+    end
+
+    subgraph "CREDIT MIDDLEWARE"
+        CREDIT_MID["💳 creditMiddleware.js<br/>1. Check User Credits<br/>2. Check Daily Limit<br/>3. Verify Premium Status"]
+        CREDIT_OK{Has Credits?}
+    end
+
+    subgraph "BUSINESS LOGIC"
+        ROUTE["🛣️ Route Handler<br/>Execute Business<br/>Logic"]
+        DB_OP["💾 Database Operation<br/>MongoDB Query/Update"]
+    end
+
+    subgraph "RESPONSE"
+        SUCCESS["✅ 200 OK<br/>Return Data"]
+        ERROR_AUTH["❌ 401 Unauthorized<br/>Invalid Token"]
+        ERROR_FORBIDDEN["❌ 403 Forbidden<br/>No Permission"]
+        ERROR_CREDIT["❌ 402 Payment Required<br/>Insufficient Credits"]
+    end
+
+    REQ --> AUTH_MID
+    AUTH_MID --> AUTH_OK
+
+    AUTH_OK -->|No| ERROR_AUTH
+    AUTH_OK -->|Yes| ROLE_CHECK
+
+    ROLE_CHECK --> PERMISSION
+    PERMISSION -->|Allowed| CREDIT_MID
+    PERMISSION -->|Denied| ERROR_FORBIDDEN
+
+    CREDIT_MID --> CREDIT_OK
+    CREDIT_OK -->|No| ERROR_CREDIT
+    CREDIT_OK -->|Yes| ROUTE
+
+    ROUTE --> DB_OP
+    DB_OP --> SUCCESS
+
+    ERROR_AUTH --> [*]
+    ERROR_FORBIDDEN --> [*]
+    ERROR_CREDIT --> [*]
+    SUCCESS --> [*]
+
+    style AUTH_OK fill:#ffccbc
+    style CREDIT_OK fill:#ffccbc
+    style PERMISSION fill:#ffccbc
+    style SUCCESS fill:#c8e6c9
+    style ERROR_AUTH fill:#ffcdd2
+    style ERROR_FORBIDDEN fill:#ffcdd2
+    style ERROR_CREDIT fill:#ffcdd2

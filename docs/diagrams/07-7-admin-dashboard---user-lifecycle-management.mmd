@@ -1,0 +1,72 @@
+graph TB
+    subgraph "USER REGISTRATION"
+        REG["📝 New User Registers<br/>- Farmer<br/>- Officer<br/>- Buyer"]
+    end
+
+    subgraph "ADMIN APPROVAL WORKFLOW"
+        PENDING["⏳ New Officer Pending<br/>- Flag: isApproved: false<br/>- Status: pending"]
+        REVIEW["👀 Admin Reviews<br/>- ID Verification<br/>- Department Check<br/>- Qualifications"]
+        DECISION{Decision}
+        APPROVE["✅ Approved<br/>Status: approved<br/>- Can Now Conduct<br/>  Sessions"]
+        REJECT["❌ Rejected<br/>Status: rejected<br/>- Notify User<br/>- Reason Provided"]
+    end
+
+    subgraph "USER MANAGEMENT"
+        ACTIVE["✅ Active Users<br/>- View List<br/>- Search/Filter<br/>- Check Status"]
+        MONITOR["📊 Monitor Activity<br/>- Login History<br/>- Credit Usage<br/>- Feature Access"]
+        SUSPEND["🚫 Suspend Users<br/>- For Violations<br/>- False Reports<br/>- Abusive Behavior"]
+    end
+
+    subgraph "REPUTATION OVERSIGHT"
+        FALSE_REP["⚠️ Flag False Reports<br/>- Officer Reports<br/>  Incorrect Diagnosis"]
+        CHECKS["✓ Verify Accuracy<br/>- Cross Check AI<br/>- Community Feedback"]
+        PENALIZE["📉 Apply Penalties<br/>- Reduce Reputation<br/>- Flag Account<br/>- Suspend if Severe"]
+    end
+
+    subgraph "ANALYTICS DASHBOARD"
+        STATS["📊 System Statistics<br/>- Total Users<br/>- Daily Active<br/>- Growth Rate"]
+        USAGE["📈 Feature Usage<br/>- AI Doctor Calls<br/>- Marketplace Sales<br/>- Consultation Bookings"]
+        HEALTH["💊 System Health<br/>- API Latency<br/>- Error Rates<br/>- AI Model Accuracy"]
+    end
+
+    subgraph "CONTENT MODERATION"
+        ALERTS_MOD["🚨 Moderate Alerts<br/>- Spam Alerts<br/>- False Alerts<br/>- Offensive Content"]
+        LISTINGS_MOD["🛒 Review Listings<br/>- Inappropriate Photos<br/>- Pricing Issues<br/>- Duplicate Listings"]
+        FEEDBACK_MOD["⭐ Monitor Reviews<br/>- Offensive Language<br/>- Spam Reviews<br/>- Suspicious Patterns"]
+    end
+
+    subgraph "ENFORCEMENT"
+        WARN["⚠️ Warning Message<br/>- Clarify Violation<br/>- Offer Resolution"]
+        TEMP_BAN["🚫 Temporary Ban<br/>- 7-30 Days<br/>- Limited Features"]
+        PERM_BAN["❌ Permanent Ban<br/>- Delete Account<br/>- Report to Authority"]
+    end
+
+    REG --> PENDING
+
+    PENDING --> REVIEW --> DECISION
+    DECISION -->|Officer| APPROVE
+    DECISION -->|False Info| REJECT
+
+    APPROVE --> ACTIVE
+    ACTIVE --> MONITOR
+    MONITOR --> SUSPEND
+
+    FALSE_REP --> CHECKS
+    CHECKS --> PENALIZE
+
+    STATS --> USAGE
+    USAGE --> HEALTH
+
+    ALERTS_MOD --> WARN
+    LISTINGS_MOD --> WARN
+    FEEDBACK_MOD --> WARN
+
+    WARN --> TEMP_BAN
+    TEMP_BAN --> PERM_BAN
+
+    style PENDING fill:#ffe0b2
+    style APPROVE fill:#c8e6c9
+    style REJECT fill:#ffcdd2
+    style SUSPEND fill:#ffcdd2
+    style STATS fill:#fff9c4
+    style PERM_BAN fill:#c62828

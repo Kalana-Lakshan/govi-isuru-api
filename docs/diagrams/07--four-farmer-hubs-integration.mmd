@@ -1,0 +1,48 @@
+graph TB
+    subgraph "HUBS NAVIGATION"
+        NAV["🌾 Farmer Hub<br/>Home & Overview<br/>4 Hub Cards"]
+    end
+
+    subgraph "🏆 FARMER HUB"
+        FH1["📊 Farm Statistics<br/>- Total Listings<br/>- Reputation Score<br/>- Sales History"]
+        FH2["🔗 Hub Shortcuts<br/>- Access 4 Hubs<br/>- Quick Navigation<br/>- Hub Features"]
+    end
+
+    subgraph "🦠 CROP CARE HUB"
+        CCH1["🗂️ Disease Database<br/>- Identify Diseases<br/>- VIEW Symptoms<br/>- Get Remedies"]
+        CCH2["🌾 Care Tips<br/>- Seasonal Advice<br/>- Pest Management<br/>- Fertilizer Guides"]
+        CCH3["🔍 Crop Selection<br/>- Choose Crop<br/>- Get Customized<br/>  Care Info"]
+    end
+
+    subgraph "🛒 MARKET HUB"
+        MH1["👥 Buyer Connections<br/>- Browse Buyers<br/>- Filter by Type<br/>- Rate & Review"]
+        MH2["📊 Price Insights<br/>- Current Prices<br/>- Price Trends<br/>- Market Analysis"]
+        MH3["💼 Marketplace Access<br/>- Post Listings<br/>- Manage Sales<br/>- Fulfill Orders"]
+    end
+
+    subgraph "👨‍🏫 CONSULTATION HUB"
+        CON1["🗓️ Expert Booking<br/>- View Officers<br/>- Check Schedules<br/>- Book Sessions"]
+        CON2["📚 Group Learning<br/>- Live Sessions<br/>- Recorded Videos<br/>- Q&A Forums"]
+        CON3["💬 Direct Messaging<br/>- Chat with Officer<br/>- Get Instant Advice<br/>- Share Images"]
+    end
+
+    NAV -->|Hub 1| FH1
+    NAV -->|Hub 2| CCH1
+    NAV -->|Hub 3| MH1
+    NAV -->|Hub 4| CON1
+
+    FH1 --> FH2
+
+    CCH1 --> CCH2
+    CCH2 --> CCH3
+
+    MH1 --> MH2
+    MH2 --> MH3
+
+    CON1 --> CON2
+    CON2 --> CON3
+
+    style FH1 fill:#fff3e0
+    style CCH1 fill:#e3f2fd
+    style MH1 fill:#f3e5f5
+    style CON1 fill:#e8f5e9

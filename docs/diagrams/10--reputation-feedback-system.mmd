@@ -1,0 +1,54 @@
+graph TB
+    subgraph "FARMER ACTIONS"
+        LIST["📝 Create Listing"]
+        SELL["🛒 Complete Sale"]
+        FEEDBACK["⭐ Receive Feedback<br/>from Buyer"]
+    end
+
+    subgraph "REPUTATION METRICS"
+        SCORE["⭐ Reputation Score<br/>1.0 - 5.0"]
+        SALES["🔢 Total Sales Count"]
+        VERIFIED["✅ Verified Listings"]
+        REVIEWS["💬 Total Reviews"]
+    end
+
+    subgraph "FEEDBACK SYSTEM"
+        RATING["⭐ Star Rating<br/>1-5 Stars"]
+        WRITTEN["📝 Written Review<br/>Optional Comments"]
+        HISTORY["📚 Review History<br/>Public Profile"]
+    end
+
+    subgraph "REPUTATION IMPACTS"
+        VERIFY["✅ Verification Badge<br/>High Reputation<br/>(4.0+)")
+        VISIBILITY["👁️ Listing Visibility<br/>Higher in Search"]
+        TRUST["🛡️ Trust Score<br/>Affects Buyer<br/>Filtering"]
+    end
+
+    subgraph "FALSE REPORTS"
+        FALSE["❌ False Report<br/>Submitted by<br/>Farmer/Officer"]
+        TRACK["📊 Track False<br/>Report Count"]
+        PENALTY["⚠️ Account Flag<br/>After 3+ False<br/>Reports"]
+    end
+
+    LIST --> SELL
+    SELL --> FEEDBACK
+
+    FEEDBACK -->|⭐| RATING
+    RATING -->|💬| WRITTEN
+    WRITTEN -->|Store| HISTORY
+
+    HISTORY --> SCORE
+    FEEDBACK -->|Count| SALES
+    LIST -->|Count| VERIFIED
+    HISTORY -->|Count| REVIEWS
+
+    SCORE --> VERIFY
+    SCORE --> VISIBILITY
+    SCORE --> TRUST
+
+    FALSE --> TRACK
+    TRACK -->|Count| PENALTY
+
+    style SCORE fill:#fff9c4
+    style VERIFY fill:#c8e6c9
+    style PENALTY fill:#ffcdd2

@@ -1,0 +1,86 @@
+graph TB
+    START["🌾 Farmer Notices Symptoms<br/>on Crop Leaf"]
+    
+    START --> OPEN_APP["📱 Opens Govi Isuru App"]
+    OPEN_APP --> NAV_HUB["Navigates to<br/>Crop Care Hub"]
+    
+    NAV_HUB --> OPEN_DOCTOR["Selects AI Doctor<br/>Disease Detection"]
+    
+    OPEN_DOCTOR --> SELECT_CROP["🌾 Step 1:<br/>Select Crop Type<br/>Rice/Tea/Chili"]
+    SELECT_CROP --> UPLOAD_IMG["📸 Step 2:<br/>Upload Leaf Photo"]
+    
+    UPLOAD_IMG --> CHECK_CREDITS["💳 Pre-Check Credits<br/>Required: 10 credits<br/>Available: ?"]
+    
+    CHECK_CREDITS -->|Insufficient| SHOW_BUY["Show Credit<br/>Purchase Modal"]
+    SHOW_BUY --> BUY_CREDITS["💰 Farmer Buys<br/>Credits (Stripe)"]
+    BUY_CREDITS --> ADD_CREDITS["Credits Added<br/>to Account"]
+    ADD_CREDITS --> DEDUCT["Deduct 10 Credits<br/>for AI Call"]
+    
+    CHECK_CREDITS -->|Sufficient| DEDUCT
+    
+    DEDUCT --> SEND_AI["🚀 Send Request<br/>to FastAPI<br/>AI Service"]
+    
+    SEND_AI --> PROCESS_AI["🧠 AI Service:<br/>1. Validate Image<br/>2. Load Model<br/>3. Preprocess<br/>4. Inference<br/>5. Generate GradCAM"]
+    
+    PROCESS_AI --> GET_RESULT["🔍 AI Returns:<br/>- Disease Name<br/>- Confidence (98%)<br/>- Severity<br/>- GradCAM Heatmap"]
+    
+    GET_RESULT --> DISPLAY["📊 Display Results<br/>to Farmer"]
+    
+    DISPLAY --> SAVE_REPORT["💾 Save Report<br/>to MongoDB<br/>Disease.js Model"]
+    
+    SAVE_REPORT --> FARMER_OPTION{Farmer<br/>Decision}
+    
+    FARMER_OPTION -->|"Keep Private"| PRIVATE["✅ Report Saved<br/>Only Visible to Farmer<br/>Show Treatments"]
+    
+    FARMER_OPTION -->|"Report to Community"| REPORT_BTN["📢 Click<br/>'Report Alert'"]
+    
+    REPORT_BTN --> CREATE_ALERT["Create Alert Document<br/>Status: PENDING<br/>Officer Needs Review"]
+    
+    CREATE_ALERT --> NOTIFY_OFFICER["🔔 Push Notification<br/>to Local Officers<br/>New Alert in District"]
+    
+    NOTIFY_OFFICER --> OFFICER_LOGIN["👮 Officer Logs Into<br/>Officer Dashboard"]
+    
+    OFFICER_LOGIN --> OFFICER_VIEW["Views Pending<br/>Disease Reports<br/>- Farmer's Photo<br/>- AI Diagnosis<br/>- GPS Location"]
+    
+    OFFICER_VIEW --> OFFICER_DECISION{Officer<br/>Confirms?}
+    
+    OFFICER_DECISION -->|"Reject"| REJECT_ALERT["❌ Status: REJECTED<br/>- False Alarm<br/>- Farmer Notified"]
+    
+    OFFICER_DECISION -->|"Confirm"| VERIFY_ALERT["✅ Status: APPROVED"]
+    
+    VERIFY_ALERT --> ADD_EVIDENCE["Officer Optionally:<br/>- Adds Field Evidence<br/>- Photos<br/>- Observations"]
+    
+    ADD_EVIDENCE --> CREATE_COMMUNITY_ALERT["📢 Create Community-Wide<br/>Alert"]
+    
+    CREATE_COMMUNITY_ALERT --> CALC_SEVERITY["⚠️ Calculate Severity<br/>1. Location Cluster<br/>2. Weather Check<br/>3. Spread Analysis<br/>4. Assign: Low/Med/High"]
+    
+    CALC_SEVERITY --> BROADCAST["📡 Broadcast Alert<br/>to All Farmers in<br/>- Same GN Division<br/>- Nearby Districts<br/>- Same Crop Type"]
+    
+    BROADCAST --> NOTIF_FARMERS["🔔 Farmers Receive:<br/>- Push Notification<br/>- In-App Alert<br/>- Email/SMS"]
+    
+    NOTIF_FARMERS --> COMMUNITY_VIEW["👥 Farmers View<br/>Disease Alerts<br/>Dashboard:<br/>- Alert Card<br/>- Severity Badge<br/>- Treatments<br/>- Count of Reports"]
+    
+    COMMUNITY_VIEW --> DISCUSS["💬 Community Discussion<br/>- Share Experiences<br/>- Discuss Solutions<br/>- Post Photos"]
+    
+    DISCUSS --> TREATMENTS["💊 Access Treatment<br/>Recommendations<br/>- Organic Methods<br/>- Chemical Solutions<br/>- Preventive Measures"]
+    
+    TREATMENTS --> IMPLEMENT["🌾 Farmers Implement<br/>Solutions"]
+    
+    IMPLEMENT --> RECOVERY["✅ Disease Controlled<br/>in Area"]
+    
+    RECOVERY --> ARCHIVE["📂 Alert Archived<br/>Status: RESOLVED<br/>Stored for Analytics"]
+    
+    PRIVATE --> END["✅ END - Private Report"]
+    REJECT_ALERT --> END
+    ARCHIVE --> END["✅ END - Community Alert"]
+
+    style START fill:#fff9c4
+    style CHECK_CREDITS fill:#ffccbc
+    style PROCESS_AI fill:#f3e5f5
+    style DISPLAY fill:#c8e6c9
+    style FARMER_OPTION fill:#ffe0b2
+    style OFFICER_DECISION fill:#ffe0b2
+    style BROADCAST fill:#ffccbc
+    style COMMUNITY_VIEW fill:#bbdefb
+    style TREATMENTS fill:#c8e6c9
+    style END fill:#a5d6a7

@@ -1,0 +1,104 @@
+graph TB
+    subgraph "FARMER PREPARATION"
+        F1["👨‍🌾 Farmer Logs In"]
+        F2["📝 Navigate to 'Create Listing'"]
+        F3["🌾 Enter Crop Details:<br/>- Crop Type<br/>- Variety<br/>- Quality Grade (A/B/C)<br/>- Harvest Date<br/>- Quantity (kg)<br/>- Price (LKR/kg)<br/>- Description"]
+    end
+
+    subgraph "IMAGE UPLOAD"
+        F4["📸 Upload Images<br/>(Max 5, 5MB each)"]
+        F5["✅ Multer Validation:<br/>- File Type Check<br/>- Size Limit Check<br/>- Virus Scan"]
+        F6["💾 Save to:<br/>uploads/listings/<br/>listing-{timestamp}-{random}.jpg"]
+    end
+
+    subgraph "LISTING PUBLICATION"
+        F7["✅ Create Listing Record<br/>in MongoDB<br/>- farmerId<br/>- cropType<br/>- images[]<br/>- status: ACTIVE<br/>- createdAt"]
+        F8["📢 Listing Goes Live<br/>Visible to Buyers"]
+    end
+
+    subgraph "BUYER DISCOVERY"
+        B1["🛍️ Buyer Logs In<br/>(as BUYER role)"]
+        B2["🔍 Open Marketplace<br/>or Access via<br/>Market Hub"]
+        B3["🎛️ Browse/Filter:<br/>- Crop Type<br/>- District<br/>- Quality<br/>- Price Range"]
+        B4["📋 View Listings<br/>See Farmer Profile:<br/>- Name<br/>- Rating ⭐<br/>- Previous Sales<br/>- Verified Badge✓"]
+    end
+
+    subgraph "BUYER SAVES & COMMUNICATES"
+        B5["❤️ Save to<br/>Saved Listings<br/>(buyer.savedListings)"]
+        B6["💬 Contact Farmer<br/>- Click Message Button<br/>- Send Initial Inquiry"]
+        B7["📨 Message Sent to:<br/>- Farmer's In-App<br/>- Email Notification<br/>- SMS (optional)"]
+    end
+
+    subgraph "FARMER RESPONDS"
+        F9["🔔 Farmer Notified<br/>New Message<br/>from Buyer"]
+        F10["💬 Farmer Reviews<br/>- Buyer Inquiry<br/>- Buyer Rating<br/>- Previous Purchases"]
+        F11["✍️ Farmer Responds:<br/>- Confirms Details<br/>- Negotiates Price<br/>- Suggests Delivery<br/>- Answers Questions"]
+    end
+
+    subgraph "NEGOTIATION & BOOKING"
+        N1["🤝 Back & Forth<br/>Messaging<br/>Price, Delivery Date<br/>Pickup Location"]
+        N2["✅ Agree on Terms:<br/>- Final Price<br/>- Delivery Method<br/>- Pickup Date/Time<br/>- Payment Method"]
+    end
+
+    subgraph "MANUAL BOOKING CREATION"
+        MB1["📅 Create Manual<br/>Booking Record"]
+        MB2["📝 Booking Details:<br/>- buyerId<br/>- farmerId<br/>- listingId<br/>- quantity_ordered<br/>- agreed_price<br/>- delivery_date<br/>- pickup_location<br/>- payment_method"]
+        MB3["💾 Store in MongoDB<br/>ManualBooking Model<br/>status: CONFIRMED"]
+    end
+
+    subgraph "PAYMENT HANDLING"
+        P1["💳 Payment Methods:<br/>1. Cash on Delivery<br/>2. Bank Transfer<br/>3. Mobile Money"]
+        P2["📝 Record in System:<br/>- Amount<br/>- Method<br/>- Confirmation<br/>- Invoice Generated"]
+    end
+
+    subgraph "PHYSICAL DELIVERY"
+        D1["🚚 Pickup/Delivery Day<br/>- Farmer Prepares<br/>  Produce<br/>- Buyer Arrives/<br/>  Delivery"]
+        D2["✅ Quality Check<br/>Buyer Inspects<br/>- Quantity<br/>- Freshness<br/>- Quality Grade"]
+        D3["💰 Payment Settled<br/>- If COD, Pay Now<br/>- If Transfer, Confirm"]
+    end
+
+    subgraph "FEEDBACK & REPUTATION UPDATE"
+        FB1["⭐ Feedback Exchange<br/>Buyer Rates 1-5 Stars<br/>Farmer Rates Buyer"]
+        FB2["💬 Written Review<br/>(Optional Comments)"]
+        FB3["📊 Store Feedback<br/>in Feedback Model<br/>- rating<br/>- review_text<br/>- timestamp<br/>- reviewer_id"]
+    end
+
+    subgraph "REPUTATION IMPACT"
+        REP1["📈 Update Farmer<br/>Reputation Score<br/>New Avg from all<br/>feedback ratings"]
+        REP2["📊 Update Metrics:<br/>- total_sales ++<br/>- total_feedbacks ++<br/>- verified_listings ++"]
+        REP3["✅ Check Badge<br/>If avg >= 4.0:<br/>Add Verified Farmer ✓"]
+    end
+
+    subgraph "COMPLETION"
+        C1["✅ Close Booking<br/>status: COMPLETED"]
+        C2["📚 Archive for<br/>Analytics &<br/>History"]
+    end
+
+    F1 --> F2 --> F3 --> F4 --> F5 --> F6 --> F7 --> F8
+
+    B1 --> B2 --> B3 --> B4 --> B5 --> B6 --> B7
+
+    F8 -->|visible| B4
+    B7 --> F9 --> F10 --> F11
+
+    F11 --> N1 --> N2
+
+    N2 --> MB1 --> MB2 --> MB3
+
+    MB3 --> P1 --> P2
+
+    P2 --> D1 --> D2 --> D3
+
+    D3 --> FB1 --> FB2 --> FB3
+
+    FB3 --> REP1 --> REP2 --> REP3
+
+    REP3 --> C1 --> C2
+
+    style F1 fill:#c8e6c9
+    style B1 fill:#bbdefb
+    style N1 fill:#fff9c4
+    style D1 fill:#ffccbc
+    style FB1 fill:#f8bbd0
+    style REP1 fill:#fff9c4
+    style C2 fill:#a5d6a7

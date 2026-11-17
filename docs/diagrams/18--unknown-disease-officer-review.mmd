@@ -1,0 +1,11 @@
+flowchart TB
+    P["UNKNOWN_DISEASE answers"] --> S[("UnknownCase<br/>photo · crop · district · embedding · pending")]
+    S --> A{"3 or more pending cases of one crop<br/>in a district within 7 days?"}
+    A -->|yes| N["🔔 Notification to that district's officers<br/>(English + Sinhala)"]
+    O["👮 Officer dashboard: Unknown diseases"] --> L["List pending cases by crop"]
+    L --> G["Group similar cases<br/>POST /api/ai/unknown-cases/cluster<br/>to AI /v1/disease/unknowns/cluster"]
+    G --> R["Groups: representative photo,<br/>districts, closest known disease"]
+    R -->|"confirm with a snake_case name"| C["POST /api/ai/unknown-cases/confirm<br/>to AI /v1/disease/prototypes"]
+    C --> K["Matching photos now return KNOWN_DISEASE<br/>(source: officer_prototype) without retraining"]
+    C --> T["Confirmed photos go into the next Colab training round"]
+    R -->|"not a disease"| D["dismiss"]

@@ -1,0 +1,53 @@
+graph TB
+    subgraph "CREDIT BALANCE"
+        INIT["🆕 New User<br/>Initial: 200 Credits"]
+        DAILY["📅 Daily Limit<br/>Reset to 200<br/>Every 24 Hours"]
+        USAGE["🔴 Credit Deduction<br/>Per Feature Use"]
+    end
+
+    subgraph "FEATURE USAGE"
+        AI_DOCTOR["💬 AI Doctor<br/>-10 Credits/Call"]
+        CONSULT["👨‍🏫 Consultation<br/>-50 Credits/Session"]
+        REPORT["📝 Disease Report<br/>-5 Credits/Report"]
+        YIELD["📈 Yield Prediction<br/>-15 Credits/Prediction"]
+    end
+
+    subgraph "CREDIT PURCHASE"
+        LOW_ALERT["🔔 Low Balance<br/>Alert (< 50)")
+        MODAL["💳 Credit Purchase<br/>Modal Opens"]
+        PAYMENT["💰 Payment Gateway<br/>Process Transaction"]
+    end
+
+    subgraph "PAYMENT OPTIONS"
+        AMOUNT["💵 Select Amount<br/>100/500/1000/5000"]
+        GATEWAY["🔐 Stripe/PayPal<br/>Payment Processing"]
+        CONFIRM["✅ Transaction<br/>Confirmation"]
+    end
+
+    subgraph "PREMIUM TIER"
+        PREMIUM["👑 Premium User<br/>- Unlimited Credits<br/>- Priority Support<br/>- Exclusive Features"]
+        RENEWAL["🔄 Auto-Renewal<br/>Monthly/Yearly"]
+    end
+
+    INIT --> DAILY
+    DAILY --> USAGE
+
+    USAGE -->|Deduct| AI_DOCTOR
+    USAGE -->|Deduct| CONSULT
+    USAGE -->|Deduct| REPORT
+    USAGE -->|Deduct| YIELD
+
+    USAGE --> LOW_ALERT
+    LOW_ALERT --> MODAL
+    MODAL --> PAYMENT
+
+    AMOUNT --> GATEWAY
+    GATEWAY --> CONFIRM
+    CONFIRM -->|Add Credits| DAILY
+
+    PREMIUM --> RENEWAL
+
+    style INIT fill:#c8e6c9
+    style LOW_ALERT fill:#ffcdd2
+    style CONFIRM fill:#c8e6c9
+    style PREMIUM fill:#fff9c4

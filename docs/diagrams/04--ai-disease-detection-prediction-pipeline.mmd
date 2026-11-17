@@ -1,0 +1,20 @@
+flowchart TB
+    IMG["📸 Leaf photo (JPEG/PNG/WebP, max 10 MB)"] --> Q{"Photo quality<br/>size · brightness · contrast · sharpness"}
+    Q -->|fails| BAD["BAD_PHOTO<br/>+ retake advice"]
+    Q -->|ok| PRE["Resize 224 px · normalise"]
+    PRE --> NET["MobileNetV4-S student (ONNX INT8)<br/>one forward pass"]
+    NET --> GATE["Crop gate head<br/>(temperature-calibrated)"]
+    NET --> HEADS["Per-crop cosine heads<br/>rice 14 · tea 10 · chili 8 classes"]
+    NET --> EMB["Embedding"]
+    GATE -->|not a plant| NAP["NOT_A_PLANT"]
+    GATE -->|other plant| UNS["UNSUPPORTED_PLANT"]
+    GATE -->|"crop differs from selection"| WC["WRONG_CROP<br/>+ detected crop"]
+    GATE -->|unsure| LC1["LOW_CONFIDENCE<br/>(crop uncertain)"]
+    GATE -->|"crop matches selection"| NOV{"Mahalanobis distance<br/>to class prototypes"}
+    EMB --> NOV
+    NOV -->|"far from all (95 % TPR threshold)"| UNK["UNKNOWN_DISEASE<br/>+ embedding for officers"]
+    NOV -->|"near officer-registered disease"| OFF["KNOWN_DISEASE<br/>source: officer_prototype"]
+    NOV -->|near a trained class| CONF{"Calibrated confidence<br/>above the 5 %-risk threshold?"}
+    HEADS --> CONF
+    CONF -->|no| LC2["LOW_CONFIDENCE<br/>top-3 shown"]
+    CONF -->|yes| KD["KNOWN_DISEASE<br/>class · confidence · CAM heatmap"]

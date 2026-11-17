@@ -1,0 +1,54 @@
+graph TB
+    subgraph "DEVICE TIERS"
+        MOBILE["📱 Mobile<br/>< 640px"]
+        TABLET["📊 Tablet<br/>640px - 1024px"]
+        DESKTOP["💻 Desktop<br/>> 1024px"]
+    end
+
+    subgraph "TAILWIND CSS BREAKPOINTS"
+        SM["sm: 640px<br/>Stack Layout"]
+        MD["md: 768px<br/>2-col Grid"]
+        LG["lg: 1024px<br/>3-col Grid"]
+        XL["xl/2xl:<br/>Full Layout"]
+    end
+
+    subgraph "RESPONSIVE COMPONENTS"
+        NAV["Navigation<br/>- Hamburger (Mobile)<br/>- Full Nav (Desktop)"]
+        HUBS["Hub Cards<br/>- 1 Row (Mobile)<br/>- 2x2 Grid (Desktop)"]
+        IMGS["Image Gallery<br/>- 1 col (Mobile)<br/>- 3+ col (Desktop)"]
+        FORM["Input Forms<br/>- Full Width (Mobile)<br/>- 2-col (Desktop)"]
+    end
+
+    subgraph "ADAPTIVE FEATURES"
+        TOUCH["👆 Touch Optimized<br/>Larger Buttons<br/>Wider Clickable Areas"]
+        PERF["⚡ Performance<br/>Lazy Load Images<br/>Reduce Animations"]
+        BANDWIDTH["📡 Bandwidth Aware<br/>Compress Images<br/>WebP Format"]
+    end
+
+    MOBILE -->|triggers| SM
+    TABLET -->|triggers| MD
+    DESKTOP -->|triggers| LG
+
+    SM --> NAV
+    SM --> HUBS
+    SM --> IMGS
+    SM --> FORM
+
+    MD --> HUBS
+    MD --> IMGS
+    MD --> FORM
+
+    LG --> NAV
+    LG --> HUBS
+    LG --> IMGS
+
+    NAV --> TOUCH
+    HUBS --> PERF
+    IMGS --> BANDWIDTH
+
+    style MOBILE fill:#c8e6c9
+    style TABLET fill:#bbdefb
+    style DESKTOP fill:#fff9c4
+    style TOUCH fill:#f1f8e9
+    style PERF fill:#f1f8e9
+    style BANDWIDTH fill:#f1f8e9

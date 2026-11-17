@@ -1,0 +1,78 @@
+erDiagram
+    USER ||--o{ LISTING : creates
+    USER ||--o{ DISEASE_REPORT : submits
+    USER ||--o{ ALERT : reports
+    USER ||--o{ SESSION : attends
+    USER ||--o{ MANUAL_BOOKING : participates
+    USER ||--o{ FEEDBACK : gives
+    USER ||--o{ INSTRUCTOR_SLOT : manages
+    USER ||--o{ SAVED_LISTINGS : saves
+    
+    LISTING ||--o{ MANUAL_BOOKING : "has"
+    LISTING ||--o{ FEEDBACK : "receives"
+    LISTING ||--o{ SAVED_LISTINGS : "saved by"
+    
+    DISEASE_REPORT ||--o{ ALERT : "triggers"
+    DISEASE_REPORT ||--o{ FEEDBACK : "receives"
+    
+    ALERT ||--o{ SESSION : "may result in"
+    
+    SESSION ||--o{ FEEDBACK : "receives"
+    SESSION ||--o{ INSTRUCTOR_SLOT : "uses"
+    
+    MANUAL_BOOKING ||--o{ FEEDBACK : "receives"
+    
+    USER : ObjectId _id
+    USER : String username
+    USER : String email
+    USER : String role
+    USER : Number credits
+    USER : Number reputation_score
+    
+    LISTING : ObjectId _id
+    LISTING : ObjectId farmerId
+    LISTING : String cropType
+    LISTING : Number price_per_kg
+    LISTING : String status
+    
+    DISEASE_REPORT : ObjectId _id
+    DISEASE_REPORT : ObjectId user_id
+    DISEASE_REPORT : String crop_type
+    DISEASE_REPORT : String disease_detected
+    DISEASE_REPORT : Number ai_confidence
+    
+    ALERT : ObjectId _id
+    ALERT : String alert_type
+    ALERT : String severity_level
+    ALERT : String status
+    ALERT : Array affected_districts
+    
+    SESSION : ObjectId _id
+    SESSION : ObjectId instructor_id
+    SESSION : ObjectId farmer_id
+    SESSION : Date scheduled_date
+    SESSION : String status
+    SESSION : Number credits_charged
+    
+    MANUAL_BOOKING : ObjectId _id
+    MANUAL_BOOKING : ObjectId buyer_id
+    MANUAL_BOOKING : ObjectId farmer_id
+    MANUAL_BOOKING : ObjectId listing_id
+    MANUAL_BOOKING : Number quantity_ordered
+    MANUAL_BOOKING : String status
+    
+    FEEDBACK : ObjectId _id
+    FEEDBACK : ObjectId reviewer_id
+    FEEDBACK : ObjectId target_user_id
+    FEEDBACK : Number rating
+    FEEDBACK : String feedback_type
+    
+    INSTRUCTOR_SLOT : ObjectId _id
+    INSTRUCTOR_SLOT : ObjectId instructor_id
+    INSTRUCTOR_SLOT : Date slot_date
+    INSTRUCTOR_SLOT : String status
+    
+    SAVED_LISTINGS : ObjectId _id
+    SAVED_LISTINGS : ObjectId user_id
+    SAVED_LISTINGS : ObjectId listing_id
+    SAVED_LISTINGS : Date saved_at

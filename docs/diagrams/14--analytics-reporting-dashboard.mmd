@@ -1,0 +1,44 @@
+graph TB
+    subgraph "DATA SOURCES"
+        USERS["👥 User Events<br/>- Logins<br/>- Feature Usage<br/>- Credits Spent"]
+        REPORTS["🦠 Disease Reports<br/>- Count<br/>- Types<br/>- Locations"]
+        SALES["🛒 Sales Data<br/>- Transactions<br/>- Revenue<br/>- Top Crops"]
+        AI_PRED["🤖 AI Predictions<br/>- Model Accuracy<br/>- Usage Stats"]
+    end
+
+    subgraph "DATA AGGREGATION"
+        COLLECT["📊 Collect Events<br/>Write to MongoDB<br/>Collections"]
+        AGGREGATE["📈 Aggregate Data<br/>Group by Date<br/>District, User Role"]
+    end
+
+    subgraph "ANALYTICS ROUTES"
+        ADMIN_DASH["🏛️ Admin Analytics<br/>- User Growth<br/>- System Health<br/>- Top Features"]
+        OFFICER_DASH["👮 Officer Analytics<br/>- Area Reports<br/>- Disease Trends<br/>- Officer Stats"]
+        FARMER_INSIGHTS["👨‍🌾 Farmer Insights<br/>- My Sales<br/>- Reputation Trend<br/>- Yield History"]
+    end
+
+    subgraph "VISUALIZATION"
+        CHARTS["📊 Charts & Graphs<br/>- Line Charts<br/>- Bar Charts<br/>- Heat Maps"]
+        REPORTS_GEN["📄 Report Generation<br/>- PDF Export<br/>- CSV Download<br/>- Trends"]
+    end
+
+    USERS --> COLLECT
+    REPORTS --> COLLECT
+    SALES --> COLLECT
+    AI_PRED --> COLLECT
+
+    COLLECT --> AGGREGATE
+    AGGREGATE --> ADMIN_DASH
+    AGGREGATE --> OFFICER_DASH
+    AGGREGATE --> FARMER_INSIGHTS
+
+    ADMIN_DASH --> CHARTS
+    OFFICER_DASH --> CHARTS
+    FARMER_INSIGHTS --> CHARTS
+
+    CHARTS --> REPORTS_GEN
+
+    style ADMIN_DASH fill:#bbdefb
+    style OFFICER_DASH fill:#e3f2fd
+    style FARMER_INSIGHTS fill:#f1f8e9
+    style CHARTS fill:#fff9c4

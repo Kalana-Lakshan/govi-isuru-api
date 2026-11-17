@@ -1,0 +1,9 @@
+flowchart LR
+    F["📝 Form<br/>district · season · soil pH · soil type<br/>drainage · irrigation<br/>(temperature / rainfall optional)"] --> A["Express API<br/>/api/suitability/recommend<br/>20 credits, refunded on error"]
+    A --> N["District name matching<br/>(DCS / ERA5 / form spellings)"]
+    N --> S["AI service /v1/suitability"]
+    S --> C["Climate defaults<br/>ERA5 climatology per district<br/>temperature · season and annual rainfall · altitude"]
+    S --> R["FAO ECOCROP requirements<br/>rice · tea · chili"]
+    C & R --> M["EcoCrop limiting-factor model<br/>score = lowest factor score"]
+    M --> O["Ranking with FAO class S1/S2/S3/N,<br/>limiting factor, optimal ranges"]
+    O --> U["💡 Cards: score, class, main limitation,<br/>best ranges, climate used"]

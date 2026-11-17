@@ -1,0 +1,44 @@
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant Express as Express.js<br/>Auth Service
+    participant MongoDB
+    participant EmailService
+
+    User->>Frontend: 1. Fill Registration Form<br/>(username, email, password, role, location)
+    Frontend->>Frontend: 2. Validate Input<br/>(password strength, format)
+    
+    alt Validation Fails
+        Frontend->>User: Show Error (Invalid Input)
+    else Validation Passes
+        Frontend->>Express: 3. POST /auth/register<br/>(credentials + role)
+        Express->>Express: 4. Hash Password<br/>(bcryptjs)
+        Express->>MongoDB: 5. Create User Document<br/>(with role-specific fields)
+        MongoDB-->>Express: User Created
+        Express->>EmailService: 6. Send Verification Email<br/>(with token)
+        EmailService-->>User: Verification Email
+        Express-->>Frontend: 7. Return Success<br/>(+ session info)
+        Frontend->>User: Show "Check Email" Page
+    end
+
+    User->>EmailService: 8. Click Verification Link
+    EmailService->>Express: 9. GET /auth/verify?token=xyz
+    Express->>MongoDB: 10. Find & Update User<br/>(isEmailVerified: true)
+    MongoDB-->>Express: Updated
+    Express-->>User: 11. Redirect to Login<br/>Success Message
+
+    User->>Frontend: 12. Login Page<br/>(email + password)
+    Frontend->>Express: 13. POST /auth/login
+    Express->>MongoDB: 14. Find User by Email
+    MongoDB-->>Express: User Document
+    Express->>Express: 15. Compare Password Hash
+    
+    alt Password Incorrect
+        Express-->>Frontend: 16. Return Error
+        Frontend->>User: "Invalid Credentials"
+    else Password Correct
+        Express->>Express: 17. Generate JWT Token
+        Express-->>Frontend: 18. Return JWT + User Data
+        Frontend->>Frontend: 19. Store JWT in localStorage
+        Frontend->>User: 20. Redirect to Dashboard
+    end

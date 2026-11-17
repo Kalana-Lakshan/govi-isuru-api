@@ -1,0 +1,46 @@
+stateDiagram-v2
+    [*] --> FarmerSubmits: Farmer Submits<br/>Disease Report
+
+    FarmerSubmits --> Pending: Report Stored<br/>in MongoDB<br/>Status: PENDING
+
+    Pending --> OfficerNotified: 🔔 Push Notification<br/>Sent to Officer
+    OfficerNotified --> OfficerReviews: Officer Dashboard<br/>Shows New Report
+
+    OfficerReviews --> Decision: Officer Reviews<br/>Attached Image<br/>& Description
+
+    Decision --> FalseReport: ❌ Not a Real Disease
+    Decision --> ValidReport: ✅ Confirmed Disease
+    Decision --> NeedMoreInfo: ❓ Needs Clarification
+
+    FalseReport --> RejectedState: Status: REJECTED<br/>Farmer Notified
+    ValidReport --> ApprovingState: Status: APPROVED
+
+    NeedMoreInfo --> WaitingInfo: Status: WAITING<br/>Farmer Must<br/>Respond
+
+    WaitingInfo --> Timeout{Wait 48 Hours?}
+    Timeout -->|Yes| AutoReject: Auto-reject<br/>if no response
+    Timeout -->|No| FarmerResponds: Farmer<br/>Provides<br/>More Info
+    FarmerResponds --> Decision
+
+    ApprovingState --> GeoCluster: Cluster Geographically<br/>Find Affected Area
+
+    GeoCluster --> SeverityCalc: Calculate Severity<br/>Based on:<br/>- Spread Area<br/>- Weather<br/>- Crop Type
+
+    SeverityCalc --> SevAssigned{Assign<br/>Severity}
+
+    SevAssigned -->|Low| LowSev: 🟢 GREEN
+    SevAssigned -->|Medium| MedSev: 🟡 YELLOW
+    SevAssigned -->|High| HighSev: 🔴 RED
+
+    LowSev --> PublishAlert: Alert Published<br/>in Feed
+    MedSev --> PublishAlert
+    HighSev --> PublishAlert
+
+    PublishAlert --> SendNotif: Send Notifications<br/>to All Farmers<br/>in Affected<br/>District
+
+    SendNotif --> CommunityTreats: Community<br/>Discusses<br/>Treatments
+
+    CommunityTreats --> Archived: Status: ARCHIVED<br/>When Disease<br/>Contained
+
+    RejectedState --> [*]
+    Archived --> [*]

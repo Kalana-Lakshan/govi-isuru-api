@@ -1,0 +1,60 @@
+graph TB
+    subgraph "TRIGGER EVENTS"
+        E1["🔔 New Disease Alert<br/>Approved in District"]
+        E2["💬 Message from Buyer<br/>About Listing"]
+        E3["⭐ New Feedback<br/>on Listing/Session"]
+        E4["📅 Upcoming Consultation<br/>24h Reminder"]
+        E5["💳 Low Credit Balance<br/>Less Than 50"]
+        E6["📬 Officer Approved<br/>New Admin"]
+    end
+
+    subgraph "NOTIFICATION SERVICE"
+        NS["🔔 Notification Engine<br/>- Check Event Type<br/>- Find Recipients<br/>- Format Messages<br/>- Route to Channels"]
+    end
+
+    subgraph "DELIVERY CHANNELS"
+        PUSH["📱 Push Notification<br/>- Firebase Cloud<br/>  Messaging<br/>- In-App Badge"]
+        EMAIL["📧 Email<br/>- SendGrid<br/>- HTML Template<br/>- Unsubscribe"]
+        SMS["📱 SMS<br/>- Twilio<br/>- Text Message<br/>- Regional Language"]
+        INAPP["🔔 In-App Alert<br/>- Notification Center<br/>- Toast Message<br/>- Notification Count"]
+    end
+
+    subgraph "STORAGE & TRACKING"
+        STORE["💾 Store Notification<br/>in Database<br/>- recipient_id<br/>- notification_type<br/>- content<br/>- channels_sent<br/>- is_read<br/>- created_at"]
+        TRACK["📊 Track Delivery<br/>- Sent Status<br/>- Read Status<br/>- Click Through"]
+    end
+
+    subgraph "USER INTERACTION"
+        READ["👁️ User Reads<br/>Notification"]
+        ACTION["🔗 Click to<br/>Navigate to<br/>Relevant Feature"]
+        ARCHIVE["🗂️ Archive<br/>Read Notifications"]
+    end
+
+    E1 --> NS
+    E2 --> NS
+    E3 --> NS
+    E4 --> NS
+    E5 --> NS
+    E6 --> NS
+
+    NS -->|Route| PUSH
+    NS -->|Route| EMAIL
+    NS -->|Route| SMS
+    NS -->|Route| INAPP
+
+    PUSH --> STORE
+    EMAIL --> STORE
+    SMS --> STORE
+    INAPP --> STORE
+
+    STORE --> TRACK
+
+    TRACK --> READ
+    READ --> ACTION
+    ACTION --> ARCHIVE
+
+    style E1 fill:#ffccbc
+    style E2 fill:#bbdefb
+    style E3 fill:#f8bbd0
+    style PUSH fill:#e1f5fe
+    style STORE fill:#e8f5e9

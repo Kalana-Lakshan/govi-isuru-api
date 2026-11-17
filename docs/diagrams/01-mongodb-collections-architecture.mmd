@@ -1,0 +1,49 @@
+graph TB
+    subgraph "CORE COLLECTIONS"
+        Users["👥 Users Collection<br/>- User Profiles<br/>- Credentials<br/>- Reputation Data"]
+        Listings["🛒 Listings Collection<br/>- Farm Products<br/>- Images<br/>- Pricing"]
+        Sessions["📅 Sessions Collection<br/>- Consultations<br/>- Group Learning<br/>- Schedules"]
+    end
+
+    subgraph "AI & HEALTH COLLECTIONS"
+        DiseaseReports["🦠 Disease Reports<br/>- AI Predictions<br/>- Confidence Scores<br/>- Treatments"]
+        Alerts["🚨 Alerts Collection<br/>- Disease Outbreaks<br/>- Severity Levels<br/>- Geographic Data"]
+        CropSuitability["🌾 Crop Suitability<br/>- Location Analysis<br/>- Recommendations<br/>- Historical Data"]
+    end
+
+    subgraph "TRANSACTION COLLECTIONS"
+        ManualBookings["📝 Manual Bookings<br/>- Order Details<br/>- Payment Status<br/>- Delivery Info"]
+        Feedback["⭐ Feedback Collection<br/>- Ratings<br/>- Reviews<br/>- User Satisfaction"]
+        InstructorSlots["⏰ Instructor Slots<br/>- Available Times<br/>- Booking Status<br/>- Session Duration"]
+    end
+
+    subgraph "ADMINISTRATIVE COLLECTIONS"
+        AdminLogs["📋 Admin Action Logs<br/>- User Approvals<br/>- Moderations<br/>- System Events"]
+        CommunityAlerts["👥 Community Alerts<br/>- Admin Notifications<br/>- Broadcast Messages<br/>- System Alerts"]
+        InternalNotes["📝 Internal Notes<br/>- Admin Comments<br/>- User Flags<br/>- Investigation Notes"]
+    end
+
+    subgraph "ENGAGEMENT COLLECTIONS"
+        Notifications["🔔 Notifications<br/>- User Alerts<br/>- Delivery Status<br/>- Read Status"]
+        SavedListings["❤️ Saved Listings<br/>- User Favorites<br/>- Preferences<br/>- Browse History"]
+    end
+
+    Users -->|creates| Listings
+    Users -->|books| Sessions
+    Users -->|submits| DiseaseReports
+    Users -->|reports| Alerts
+    Listings -->|has| Feedback
+    Alerts -->|contains| DiseaseReports
+    Sessions -->|generates| Feedback
+    Listings -->|results in| ManualBookings
+    ManualBookings -->|received by| Feedback
+    Users -->|manages| InstructorSlots
+    Users -->|receives| Notifications
+    Users -->|saves| SavedListings
+
+    style Users fill:#bbdefb
+    style Listings fill:#fff9c4
+    style DiseaseReports fill:#ffccbc
+    style Alerts fill:#ffcdd2
+    style Sessions fill:#e8f5e9
+    style Feedback fill:#f8bbd0

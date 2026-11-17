@@ -1,0 +1,103 @@
+graph TB
+    subgraph "OFFICER SETUP"
+        OFF1["👨‍💼 Agricultural Officer<br/>Signs Up as OFFICER"]
+        OFF2["📋 Officer Details:<br/>- Full Name<br/>- Officer ID<br/>- Department<br/>- Designation<br/>- Expertise Areas<br/>- Phone/WhatsApp"]
+        OFF3["⏰ Set Availability<br/>- Working Hours<br/>- Consultation Slots<br/>- Days Available<br/>- Session Duration<br/>(usually 30-60 min)"]
+        OFF4["✅ Create Consultation<br/>Slots in InstructorSlot<br/>Model"]
+    end
+
+    subgraph "FARMER DISCOVERY"
+        F1["👨‍🌾 Farmer Clicks<br/>Consultation Hub"]
+        F2["👥 View Available<br/>Officers/Instructors"]
+        F3["🔍 Filter by:<br/>- Expertise<br/>- Availability<br/>- Rating<br/>- Cost (Credits/Session)"]
+        F4["📋 View Officer Profile:<br/>- Bio<br/>- Experience<br/>- Previous Session Count<br/>- Farmer Reviews<br/>- ⭐ Rating"]
+    end
+
+    subgraph "BOOKING PROCESS"
+        B1["📅 Click 'Book Session'"]
+        B2["⏰ Select Available<br/>Slot:<br/>- Date<br/>- Time<br/>- Duration"]
+        B3["💳 Check Credits:<br/>- Session Cost: 50 credits<br/>- User Credits: ?"]
+    end
+
+    subgraph "CREDIT CHECK & DEDUCTION"
+        C1{Sufficient<br/>Credits?}
+        C1 -->|No| C2["Show Credit<br/>Purchase Modal"]
+        C1 -->|Yes| C3["Reserve Slot"]
+        C2 --> C4["Farmer Buys Credits<br/>via Stripe"]
+        C4 --> C5["Credits Added<br/>to Balance"]
+        C5 --> C3
+    end
+
+    subgraph "BOOKING CONFIRMATION"
+        C3 --> CONF1["✅ Create InstructorSlot<br/>Status: BOOKED<br/>- instructorId<br/>- farmerId<br/>- session_date<br/>- session_time<br/>- duration<br/>- credits_paid: 50"]
+        CONF1 --> CONF2["Create Session Record<br/>Session Model:<br/>- session_id<br/>- topic<br/>- mode: VIDEO/AUDIO<br/>- status: SCHEDULED"]
+    end
+
+    subgraph "NOTIFICATIONS"
+        NOTIF1["🔔 Farmer Receives<br/>- Booking Confirmation<br/>- Session Details<br/>- Officer Contact<br/>- Zoom/Meet Link"]
+        NOTIF2["🔔 Officer Receives<br/>- New Booking Alert<br/>- Farmer Details<br/>- Farmer's Crop/Issue<br/>- Session Link"]
+    end
+
+    subgraph "PRE-SESSION"
+        PRE1["📸 Farmer Prepares:<br/>- Take Crop Photos<br/>- Note Issues<br/>- Prepare Questions"]
+        PRE2["📞 Officer Prepares:<br/>- Review Farmer Info<br/>- Gather Resources<br/>- Prepare Materials"]
+    end
+
+    subgraph "SESSION CONDUCT"
+        SESSION1["⏰ Session Time<br/>Officer & Farmer Join<br/>Video Conference"]
+        SESSION2["🎥 Session Topics:<br/>- Crop Problem Analysis<br/>- Visual Inspection<br/>(via photos/video)<br/>- Treatment Options<br/>- Prevention Tips<br/>- Q&A"]
+        SESSION3["📝 Officer Takes<br/>Notes in Session<br/>Records Advice<br/>provided"]
+    end
+
+    subgraph "SESSION COMPLETION"
+        END1["✅ Session Ends<br/>Status: COMPLETED<br/>Duration logged"]
+        END2["📋 Farmer Views<br/>Session Summary:<br/>- Notes<br/>- Recommendations<br/>- Resources<br/>- Follow-up"]
+    end
+
+    subgraph "FEEDBACK EXCHANGE"
+        FB1["⭐ Farmer Rates<br/>1-5 Stars<br/>- Clear Explanation<br/>- Helpful Solutions<br/>- Officer Behavior"]
+        FB2["💬 Written Feedback<br/>- What Worked?<br/>- What to Improve?"]
+        FB3["📊 Store in Feedback<br/>- rating<br/>- review<br/>- feedback_type<br/>: CONSULTATION"]
+    end
+
+    subgraph "OFFICER REPUTATION"
+        REP1["📈 Update Officer<br/>Session Count<br/>total_sessions++"]
+        REP2["⭐ Officer Rating<br/>Calculated from<br/>session feedback"]
+        REP3["👑 Achieve Status<br/>10+ Sessions = ?<br/>Top Instructor"]
+    end
+
+    subgraph "RESOURCES PROVIDED"
+        RES1["📚 Access Resources<br/>- Saved Notes<br/>- Video Recording<br/>(if allowed)<br/>- PDF Handouts"]
+        RES2["📖 Related Guides<br/>- Disease Database<br/>- Crop Care Tips<br/>- Government Links"]
+    end
+
+    OFF1 --> OFF2 --> OFF3 --> OFF4
+
+    F1 --> F2 --> F3 --> F4
+
+    B1 --> B2 --> B3
+    B3 --> C1
+
+    C3 --> CONF1 --> CONF2
+    CONF2 --> NOTIF1
+    CONF2 --> NOTIF2
+
+    NOTIF1 --> PRE1
+    NOTIF2 --> PRE2
+
+    PRE1 --> SESSION1
+    PRE2 --> SESSION1
+    SESSION1 --> SESSION2 --> SESSION3 --> END1
+
+    END1 --> END2 --> FB1 --> FB2 --> FB3
+
+    FB3 --> REP1 --> REP2 --> REP3
+
+    END2 --> RES1 --> RES2
+
+    style OFF1 fill:#bbdefb
+    style F1 fill:#c8e6c9
+    style SESSION2 fill:#fff9c4
+    style FB1 fill:#f8bbd0
+    style REP1 fill:#fff9c4
+    style RES1 fill:#e3f2fd

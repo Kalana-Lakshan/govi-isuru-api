@@ -52,6 +52,19 @@ farmers.
 
 ## Run locally
 
+**Whole system in one command.** Put the three repos side by side, then:
+
+```bash
+.\scripts\start-local.ps1            # Windows: AI service, API and web, each in its own window
+./scripts/start-local.sh             # Linux/macOS
+.\scripts\start-local.ps1 -Docker    # MongoDB + AI service + API in Docker, web with npm
+```
+
+The script creates `.env` files when they're missing. Without a trained model it builds the AI service's development
+bundle: diagnoses are random and flagged `dev_model`, while yield and suitability use real data.
+
+**API only:**
+
 ```bash
 cp .env.example .env        # fill MONGO_URI, JWT_SECRET, REFRESH_TOKEN_SECRET, AI_SERVICE_URL, AI_SERVICE_KEY
 npm install
@@ -73,6 +86,10 @@ To run the full stack, start MongoDB, the AI service and the API with `docker co
   object storage before production use.
 
 In production the server refuses to start without `JWT_SECRET` and `REFRESH_TOKEN_SECRET`, each at least 16 characters.
+
+## Documentation
+
+System docs and diagrams for all three repos, carried over from v1 and updated: [docs/](docs/README.md).
 
 ## Layout
 

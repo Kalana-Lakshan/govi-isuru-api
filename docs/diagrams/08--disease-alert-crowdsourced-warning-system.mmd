@@ -1,0 +1,44 @@
+graph TB
+    subgraph "ALERT DETECTION"
+        AI_ALERT["🤖 AI Detection<br/>Disease Photo→<br/>Auto Classification"]
+        MANUAL_ALERT["👤 Manual Report<br/>Farmer Reports<br/>Disease Outbreak"]
+    end
+
+    subgraph "ALERT VERIFICATION"
+        OFFICER_REVIEW["👮 Officer Review<br/>- Verify Report<br/>- Approve/Reject<br/>- Add Evidence"]
+        GEO_CLUSTER["📍 Geospatial<br/>Clustering<br/>Group by<br/>District/GN Division"]
+    end
+
+    subgraph "SEVERITY ASSESSMENT"
+        EXTRACT["📊 Extract Metrics<br/>- Infection Rate<br/>- Spread Speed<br/>- Weather Trends"]
+        CALC_SEV["⚠️ Calculate<br/>Severity Level<br/>Low/Medium/High"]
+    end
+
+    subgraph "NOTIFICATION & DISSEMINATION"
+        NOTIFY["📢 Send Alerts to<br/>Affected Farmers<br/>- Push Notif<br/>- SMS/Email<br/>- In-App Alert"]
+        COMMUNITY["👥 Community<br/>Dashboard<br/>- View Alert Map<br/>- See Treatments<br/>- Discuss Solutions"]
+    end
+
+    subgraph "MITIGATION & TRACKING"
+        TREATMENTS["💊 Treatment<br/>Recommendations<br/>Spread to Community"]
+        TRACK["📈 Track Alert<br/>Resolution<br/>- Monitor Spread<br/>- Update Status<br/>- Archive"]
+    end
+
+    AI_ALERT --> OFFICER_REVIEW
+    MANUAL_ALERT --> OFFICER_REVIEW
+
+    OFFICER_REVIEW --> GEO_CLUSTER
+    GEO_CLUSTER --> EXTRACT
+    EXTRACT --> CALC_SEV
+
+    CALC_SEV -->|Low| NOTIFY
+    CALC_SEV -->|Medium| NOTIFY
+    CALC_SEV -->|High| NOTIFY
+
+    NOTIFY --> COMMUNITY
+    COMMUNITY --> TREATMENTS
+    TREATMENTS --> TRACK
+
+    style AI_ALERT fill:#ffccbc
+    style CALC_SEV fill:#ffe0b2
+    style NOTIFY fill:#ffcdd2

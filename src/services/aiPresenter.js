@@ -20,12 +20,16 @@ function classInfo(catalogue, crop, cls) {
   const info = catalogue?.crops?.[crop]?.[cls] || {};
   const name = info.name || {};
   const advice = info.advice || {};
-  const list = (v) => (Array.isArray(v) ? v : v ? [v] : []);
+  // advice may be a list or one text with one step per line
+  const list = (v) => (Array.isArray(v) ? v : v ? String(v).split('\n').map((x) => x.trim()).filter(Boolean) : []);
   return {
     id: cls,
     type: info.type || null,
     name: { en: name.en || pretty(cls), si: name.si || '', ta: name.ta || '' },
     advice: { en: list(advice.en), si: list(advice.si), ta: list(advice.ta) },
+    description: info.description?.en || '',
+    severity: info.severity || null,
+    advice_source: info.advice_source || '',
   };
 }
 
@@ -61,8 +65,9 @@ function present(result, requestedCrop, catalogue) {
       si_name: info.name.si,
       confidence: result.confidence ?? null,
       treatment: info.advice.en.length ? info.advice.en : [NO_ADVICE],
-      description: info.type ? `${pretty(info.type)} problem` : '',
-      severity: result.class === 'healthy' ? 'none' : 'moderate',
+      description: info.description || (info.type ? `${pretty(info.type)} problem` : ''),
+      severity: info.severity || (result.class === 'healthy' ? 'none' : 'moderate'),
+      advice_source: info.advice_source,
     });
   }
   if (result.heatmap_png_base64) out.gradcam = { overlay: result.heatmap_png_base64 };

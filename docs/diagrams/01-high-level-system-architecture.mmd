@@ -1,0 +1,43 @@
+graph TB
+    subgraph "📱 CLIENT TIER (repo govi-isuru-web, Vercel)"
+        WEB["🌐 Next.js 15 web app<br/>React 19 + Tailwind CSS<br/>screens loaded on demand"]
+        CACHE["🔄 Browser cache<br/>localStorage, service worker (push)"]
+    end
+
+    subgraph "🔐 API TIER (repo govi-isuru-api, Render)"
+        GATE["🔑 Express 5 API<br/>JWT auth · roles · credits<br/>rate limits · gzip · helmet"]
+        ROUTES["⚙️ Routes<br/>auth · marketplace · reports · alerts<br/>officer workflow · bookings · news · weather<br/>AI doctor · yield · suitability · admin"]
+        SVC["🧩 Services<br/>aiClient · alertService · outbreak alerts<br/>reputation · analytics · email · Daily.co"]
+    end
+
+    subgraph "🤖 AI TIER (repo govi-isuru-ai-service, Render, CPU)"
+        AI["FastAPI + ONNX Runtime (INT8)<br/>MobileNetV4 student distilled from DINOv2 + CLIP"]
+        GATEM["Crop gate<br/>rice · tea · chili · other plant · not a plant"]
+        OPEN["Open-set decision<br/>known · low confidence · unknown · wrong crop · bad photo"]
+        TAB["Yield (DCS statistics) · Suitability (FAO EcoCrop + ERA5)"]
+    end
+
+    subgraph "🗄️ DATA"
+        MONGO[("MongoDB Atlas<br/>users, listings, reports, alerts,<br/>bookings, unknown cases ...")]
+        FILES[("Uploads<br/>listing photos, unknown-disease photos")]
+        STATE[("AI state volume<br/>officer-registered diseases")]
+    end
+
+    subgraph "🌍 EXTERNAL"
+        OWM["OpenWeatherMap"]
+        NEWS["News API"]
+        LLM["Gemini / Hugging Face (chatbot)"]
+        DAILY["Daily.co (video)"]
+        SMTP["Gmail SMTP"]
+    end
+
+    WEB -->|"/api/* (Next.js rewrite)"| GATE
+    WEB --- CACHE
+    GATE --> ROUTES --> SVC
+    SVC -->|"X-API-Key"| AI
+    AI --> GATEM --> OPEN
+    AI --- TAB
+    AI --- STATE
+    ROUTES --> MONGO
+    ROUTES --> FILES
+    SVC --> OWM & NEWS & LLM & DAILY & SMTP

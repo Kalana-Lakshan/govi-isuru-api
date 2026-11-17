@@ -165,3 +165,15 @@ test('unknown-disease outbreak rule: 3 cases in a week, notify once', () => {
   assert.equal(shouldNotify(3, false), true);
   assert.equal(shouldNotify(9, true), false);
 });
+
+test('presenter: advice text with one step per line, description and severity from the catalogue', () => {
+  const cat = { crops: { chili: { mites_thrips: {
+    name: { en: 'Mite / thrips damage', si: 'තිරිප්ස් කෘමි හානිය' },
+    advice: { en: 'Use sticky traps\nSpray neem oil' }, description: { en: 'Silvery streaks.' }, severity: 'high',
+    advice_source: 'Govi Isuru v1',
+  } } } };
+  const out = present({ status: 'KNOWN_DISEASE', class: 'mites_thrips', crop: 'chili', confidence: 0.8 }, 'chili', cat);
+  assert.deepEqual(out.treatment, ['Use sticky traps', 'Spray neem oil']);
+  assert.equal(out.description, 'Silvery streaks.');
+  assert.equal(out.severity, 'high');
+});

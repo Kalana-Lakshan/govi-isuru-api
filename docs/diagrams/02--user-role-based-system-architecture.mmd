@@ -1,0 +1,66 @@
+graph TB
+    subgraph "👨‍🌾 FARMER JOURNEY"
+        F1["Login/Register"]
+        F2["Browse Hubs"]
+        F3["Access AI Doctor<br/>Disease Detection"]
+        F4["View Crop Suitability<br/>Suggestions"]
+        F5["Create Marketplace<br/>Listings"]
+        F6["Receive Disease<br/>Alerts"]
+        F7["Book Consultations<br/>with Officers"]
+        F8["Earn Reputation<br/>Points"]
+    end
+
+    subgraph "👮 OFFICER DASHBOARD"
+        O1["Login (Officer)"]
+        O2["Manage Area<br/>Reports & Alerts"]
+        O3["Verify Disease<br/>Reports"]
+        O4["Schedule<br/>Consultations"]
+        O5["Analyze Area<br/>Analytics"]
+        O6["Manual Booking<br/>Management"]
+        O7["Conduct Sessions &<br/>Group Learning"]
+    end
+
+    subgraph "🛒 BUYER DASHBOARD"
+        B1["Login (Buyer)"]
+        B2["Browse Farmer<br/>Listings"]
+        B3["Filter by District/<br/>Quality"]
+        B4["Save Favorite<br/>Listings"]
+        B5["Contact Farmers"]
+        B6["Complete<br/>Transactions"]
+        B7["Rate & Provide<br/>Feedback"]
+    end
+
+    subgraph "🏛️ ADMIN DASHBOARD"
+        A1["Admin Login"]
+        A2["User Management<br/>& Approvals"]
+        A3["Officer Verification<br/>Workflow"]
+        A4["System Health<br/>Monitoring"]
+        A5["Analytics &<br/>Reports"]
+        A6["Moderate Content<br/>& Alerts"]
+    end
+
+    F1 --> F2 --> F3
+    F2 --> F4
+    F2 --> F5
+    F2 --> F6
+    F3 --> F7
+    F7 --> F8
+
+    O1 --> O2 --> O3
+    O2 --> O5
+    O1 --> O4
+    O1 --> O6 --> O7
+
+    B1 --> B2 --> B3
+    B3 --> B4
+    B3 --> B5 --> B6 --> B7
+
+    A1 --> A2 --> A3
+    A1 --> A4
+    A1 --> A5
+    A1 --> A6
+
+    style F1 fill:#c8e6c9
+    style O1 fill:#bbdefb
+    style B1 fill:#fff9c4
+    style A1 fill:#f8bbd0

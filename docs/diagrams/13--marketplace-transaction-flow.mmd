@@ -1,0 +1,53 @@
+graph TB
+    subgraph "FARMER SIDE"
+        F_LIST["📝 Create Listing<br/>- Crop Type<br/>- Quality Grade<br/>- Price<br/>- Quantity<br/>- Photos"]
+        F_UPLOAD["📸 Upload Images<br/>Multer - Disk Storage<br/>Max 5 images/5MB each"]
+        F_ACTIVE["✅ Listing Active<br/>Visible to Buyers"]
+    end
+
+    subgraph "BUYER SIDE"
+        B_BROWSE["🔍 Browse Listings<br/>- Search by Crop<br/>- Filter by District<br/>- Sort by Price"]
+        B_FILTER["🎛️ Advanced Filters<br/>- Quality Grade<br/>- Distance<br/>- Rating"]
+        B_SAVE["❤️ Save Favorites<br/>Saved Listings List"]
+    end
+
+    subgraph "TRANSACTION INITIATION"
+        B_CONTACT["💬 Contact Farmer<br/>- Send Message<br/>- Ask Questions<br/>- Negotiate Price"]
+        F_RESPOND["💬 Farmer Responds<br/>- Confirm Details<br/>- Agree on Terms"]
+    end
+
+    subgraph "ORDER MANAGEMENT"
+        MANUAL_BOOK["📅 Manual Booking<br/>- Schedule Pickup<br/>- Delivery Date<br/>- Terms"]
+        ORDER_CREATE["📦 Create Order<br/>- Record Transaction<br/>- Store in MongoDB"]
+        PAYMENT["💳 Payment<br/>- Offline/COD<br/>- Record in System"]
+    end
+
+    subgraph "TRANSACTION COMPLETE"
+        DELIVERY["🚚 Physical Delivery<br/>- Pickup/Delivery"]
+        FEEDBACK["⭐ Feedback Exchange<br/>- Buyer Rates 1-5<br/>- Written Review"]
+        REP_UPDATE["📊 Update Reputation<br/>- Farmer Reputation<br/>  Score Changes"]
+    end
+
+    F_LIST --> F_UPLOAD
+    F_UPLOAD --> F_ACTIVE
+
+    B_BROWSE --> B_FILTER
+    B_FILTER --> B_SAVE
+
+    F_ACTIVE -->|Visible| B_SAVE
+    B_SAVE --> B_CONTACT
+
+    B_CONTACT --> F_RESPOND
+    F_RESPOND --> MANUAL_BOOK
+
+    MANUAL_BOOK --> ORDER_CREATE
+    ORDER_CREATE --> PAYMENT
+
+    PAYMENT --> DELIVERY
+    DELIVERY --> FEEDBACK
+    FEEDBACK --> REP_UPDATE
+
+    style F_ACTIVE fill:#c8e6c9
+    style B_SAVE fill:#bbdefb
+    style FEEDBACK fill:#fff9c4
+    style REP_UPDATE fill:#c8e6c9

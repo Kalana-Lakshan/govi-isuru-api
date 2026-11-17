@@ -1,0 +1,8 @@
+flowchart LR
+    B["Browser"] -->|"HTTPS /api/*, /uploads/*"| W["govi-isuru-web<br/>Next.js on Vercel<br/>(rewrites to API_URL)"]
+    W -->|"HTTPS"| API["govi-isuru-api<br/>Express on Render"]
+    API -->|"mongodb+srv"| M[("MongoDB Atlas")]
+    API -->|"HTTPS + X-API-Key<br/>(backend only)"| AI["govi-isuru-ai-service<br/>FastAPI + ONNX on Render"]
+    API --> X["External APIs<br/>weather · news · LLM · video · email"]
+    AI --- V[("state volume<br/>officer prototypes")]
+    T["Colab (training, offline)"] -.->|"bundle: model.int8.onnx,<br/>calibration, yield, suitability"| AI

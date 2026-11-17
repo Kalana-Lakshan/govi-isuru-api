@@ -1,0 +1,71 @@
+graph TB
+    subgraph "NAVIGATION ENTRY"
+        HOME["🏠 Dashboard<br/>All Users"]
+        HUBS["📍 Hub Navigation<br/>- Farmer Hub<br/>- Crop Care Hub<br/>- Market Hub<br/>- Consultation Hub"]
+    end
+
+    subgraph "👨‍🌾 FARMER HUB"
+        FH1["📊 My Farm Overview<br/>- Reputation Score ⭐<br/>- Total Sales<br/>- Reviews Count<br/>- Active Listings"]
+        FH2["🔗 Hub Cards<br/>- Crop Care Hub<br/>- Market Hub<br/>- Consultation Hub"]
+        FH_FLOW["Farm → See Stats<br/>→ Browse Other Hubs"]
+    end
+
+    subgraph "🦠 CROP CARE HUB"
+        CCH1["🎓 Learn & Diagnose<br/>- AI Doctor<br/>- Disease Database<br/>- Care Tips"]
+        CCH2["🌾 By Crop Info<br/>- Rice Varieties<br/>- Tea Cultivation<br/>- Chili Growing"]
+        CCH3["💊 Get Treatments<br/>- Browse Diseases<br/>- View Solutions<br/>- Access Guides"]
+        CCH_FLOW["Crop Selection<br/>→ Browse Diseases<br/>→ Get Solutions"]
+    end
+
+    subgraph "🛒 MARKET HUB"
+        MH1["🌾 My Listings<br/>- Create New<br/>- Edit Existing<br/>- View Sales"]
+        MH2["👥 Buyer Connections<br/>- Browse Buyers<br/>- Rate Cooperation<br/>- See Patterns"]
+        MH3["📊 Market Insights<br/>- Crop Prices<br/>- Trends<br/>- Demand"]
+        MH_FLOW["Browse Buyers<br/>→ Check Prices<br/>→ Create Listing"]
+    end
+
+    subgraph "👨‍🏫 CONSULTATION HUB"
+        CON1["📅 Find Officers<br/>- View Available<br/>- Check Ratings<br/>- See Schedules"]
+        CON2["🗓️ Book Session<br/>- Select Time<br/>- Pay Credits<br/>- Get Link"]
+        CON3["📚 Resources<br/>- Session Notes<br/>- Recordings<br/>- Handouts"]
+        CON_FLOW["View Officers<br/>→ Select & Book<br/>→ Attend Session"]
+    end
+
+    subgraph "FEATURE ACCESS RESTRICTIONS"
+        FARMER["👨‍🌾 Farmer User:<br/>✅ All 4 Hubs<br/>+ AI Doctor<br/>+ Marketplace<br/>+ Consultations"]
+        BUYER["🛍️ Buyer User:<br/>✅ Market Hub<br/>(View Listings)<br/>❌ Can't Create<br/>❌ Consultation<br/>(Limited)"]
+        OFFICER["👮 Officer User:<br/>✅ Consultations<br/>(Provide Sessions)<br/>❌ Market Hub<br/>✅ Crop Care<br/>(Share Knowledge)"]
+    end
+
+    HOME --> HUBS
+
+    HUBS --> FH1
+    HUBS --> CCH1
+    HUBS --> MH1
+    HUBS --> CON1
+
+    FH1 -->|Access| FH2
+    FH2 --> CCH_FLOW
+    FH2 --> MH_FLOW
+    FH2 --> CON_FLOW
+
+    CCH1 --> CCH2
+    CCH2 --> CCH3
+
+    MH1 --> MH2
+    MH2 --> MH3
+
+    CON1 --> CON2
+    CON2 --> CON3
+
+    CCH_FLOW --> FARMER
+    MH_FLOW --> FARMER
+    CON_FLOW --> FARMER
+
+    style FH1 fill:#fff3e0
+    style CCH1 fill:#e3f2fd
+    style MH1 fill:#f3e5f5
+    style CON1 fill:#e8f5e9
+    style FARMER fill:#c8e6c9
+    style BUYER fill:#ffccbc
+    style OFFICER fill:#bbdefb

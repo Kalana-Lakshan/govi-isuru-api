@@ -1,0 +1,9 @@
+flowchart TB
+    U["👨‍🌾 District · season · area (ha)"] --> A["Express API /api/yield/*"]
+    A --> P["/predict (20 credits)<br/>forecast p10 / p50 / p90 kg/ha<br/>expected harvest for the area"]
+    A --> PR["/profit (10 credits)<br/>farmer cost and price × forecast range"]
+    A --> T["/trends · /warning · /rankings<br/>(free, cached)"]
+    P & PR & T --> AI["AI service /v1/yield/*"]
+    AI --> D[("Official DCS paddy statistics<br/>1979–2026, 25 districts, Maha and Yala")]
+    D --> M["5-season climatology forecast<br/>+ quantile interval calibrated in a rolling backtest<br/>(about 80 % of past seasons inside p10–p90)"]
+    T --> H["History: shortfall risk<br/>(seasons more than 15 % below the 5-season mean),<br/>10-season stability, district ranking"]

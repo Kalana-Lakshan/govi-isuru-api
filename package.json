@@ -1,0 +1,36 @@
+{
+  "name": "govi-isuru-api",
+  "version": "2.0.0",
+  "description": "Govi Isuru backend: REST API for the web app; calls the Govi Isuru AI service",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "node --test test/*.test.js",
+    "seed:bookings": "node scripts/seed-manual-booking-demo.js",
+    "migrate:users": "node scripts/migrate-existing-users.js"
+  },
+  "license": "UNLICENSED",
+  "type": "commonjs",
+  "dependencies": {
+    "@google-cloud/speech": "^8.0.1",
+    "@google-cloud/text-to-speech": "^7.0.0",
+    "axios": "^1.13.2",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "form-data": "^4.0.1",
+    "google-auth-library": "^11.0.2",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.0.2",
+    "multer": "^1.4.5-lts.2",
+    "nodemailer": "^7.0.13",
+    "nodemon": "^3.1.11",
+    "web-push": "^3.6.7"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -1,0 +1,28 @@
+# Local full stack: MongoDB + AI service + API. The AI service image is built from its own repo checkout
+# placed next to this one (../govi-isuru-ai-service, with its ./bundle).
+services:
+  mongo:
+    image: mongo:7
+    volumes: [mongo-data:/data/db]
+  ai:
+    build:
+      context: ../govi-isuru-ai-service
+      dockerfile: service/Dockerfile
+    environment:
+      GOVI_API_KEY: ${AI_SERVICE_KEY:-local-ai-key}
+    volumes: [ai-state:/app/state]
+    mem_limit: 512m
+  api:
+    build: .
+    ports: ["5000:5000"]
+    env_file: [.env]
+    environment:
+      MONGO_URI: mongodb://mongo:27017/govi-isuru
+      AI_SERVICE_URL: http://ai:8000
+      AI_SERVICE_KEY: ${AI_SERVICE_KEY:-local-ai-key}
+    volumes: [uploads:/app/uploads]
+    depends_on: [mongo, ai]
+volumes:
+  mongo-data:
+  ai-state:
+  uploads:

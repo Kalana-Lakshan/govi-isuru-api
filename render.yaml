@@ -1,0 +1,26 @@
+# Render blueprint (free web service). Set secrets in the Render dashboard; values marked sync:false are not stored here.
+services:
+  - type: web
+    name: govi-isuru-api
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: REFRESH_TOKEN_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        sync: false            # e.g. https://govi-isuru-web.vercel.app
+      - key: FRONTEND_URL
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: AI_SERVICE_URL
+        sync: false            # e.g. https://govi-isuru-ai.onrender.com
+      - key: AI_SERVICE_KEY
+        sync: false

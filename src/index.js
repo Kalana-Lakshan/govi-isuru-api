@@ -1,0 +1,455 @@
+const path = require('path');
+const config = require('./config');
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const multer = require('multer');
+const fs = require('fs');
+
+const User = require('./models/User');
+const Listing = require('./models/Listing');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const chatbotRoutes = require('./routes/chatbot');
+const llamaChatbotRoutes = require('./routes/llamaChatbot');
+const alertRoutes = require('./routes/alerts');
+const reputationRoutes = require('./routes/reputation');
+const newsRoutes = require('./routes/news');
+const suitabilityRoutes = require('./routes/suitability');
+const officerRoutes = require('./routes/officer');
+const analyticsRoutes = require('./routes/analytics');
+const officerWorkflowRoutes = require('./routes/officerWorkflow');
+const authRoutes = require('./routes/auth');
+const weatherRoutes = require('./routes/weather');
+const yieldRoutes = require('./routes/yield');
+const reportRoutes = require('./routes/reports');
+const manualBookingRoutes = require('./routes/manualBookings');
+const savedListingsRoutes = require('./routes/savedListings');
+const adminRoutes = require('./routes/admin');
+const aiRoutes = require('./routes/ai');
+const creditRoutes = require('./routes/credits');
+const { registerBookingEventHandlers } = require('./events/registerBookingEventHandlers');
+
+const authMiddleware = require('./middleware/authMiddleware');
+const checkCredits = require('./middleware/creditMiddleware');
+
+const app = express();
+registerBookingEventHandlers();
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(config.UPLOADS_DIR, 'listings');
+try {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+} catch (e) {
+  console.warn('Could not create uploads dir:', e.message);
+}
+
+// Multer setup for listing images (disk storage, max 5 images, 5MB each)
+const listingStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadsDir),
+  filename: (req, file, cb) => {
+    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(null, `listing-${unique}${path.extname(file.originalname)}`);
+  }
+});
+const uploadListingImages = multer({
+  storage: listingStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) cb(null, true);
+    else cb(new Error('Only image files are allowed'));
+  }
+}).array('images', 5);
+
+// Middleware
+app.use(cors(config.CORS_ORIGINS.length ? { origin: config.CORS_ORIGINS, credentials: true } : {}));
+app.use(express.json({ limit: '1mb' }));
+
+// Serve uploaded listing images as static files
+app.use('/uploads', express.static(config.UPLOADS_DIR));
+
+// Chatbot API Routes
+app.use('/api/chatbot', chatbotRoutes);
+
+// Llama 3.1 AI Chatbot API Routes (Hugging Face)
+app.use('/api/llama-chatbot', llamaChatbotRoutes);
+
+// Community Disease Alerts API Routes
+app.use('/api/alerts', alertRoutes);
+
+// Farmer Reputation API Routes
+app.use('/api/reputation', reputationRoutes);
+
+// Agriculture News API Routes
+app.use('/api/news', newsRoutes);
+
+// Crop Suitability API Routes
+// Cost: 20 credits per recommendation
+app.use('/api/suitability', authMiddleware, checkCredits(20), suitabilityRoutes);
+
+// Agricultural Instructor API Routes
+app.use('/api/officer', officerRoutes);
+
+// Analytics API Routes
+app.use('/api/analytics', analyticsRoutes);
+
+// Officer Workflow API Routes (Performance, Field Visits, Internal Notes)
+app.use('/api/officer-workflow', officerWorkflowRoutes);
+
+// Authentication API Routes (Login, Register, Email Verification, Password Reset)
+app.use('/api/auth', authRoutes);
+
+// Weather Proxy API Routes (OpenWeatherMap via backend)
+app.use('/api/weather', weatherRoutes);
+
+// Yield Prediction API Routes
+app.use('/api/yield', yieldRoutes);
+
+// Disease/Pest Report Verification API Routes (Farmer reporting, Officer verification, Farmer alerts)
+app.use('/api/reports', reportRoutes);
+
+// Manual booking routes (farmer-instructor scheduling and paid advice)
+app.use('/api/manual-bookings', manualBookingRoutes);
+
+// Saved Listings API Routes (Buyers can save/view marketplace listings)
+app.use('/api/saved-listings', savedListingsRoutes);
+
+// Admin API Routes (User Management & Officer Approval)
+app.use('/api/admin', adminRoutes);
+
+// Credit System Routes
+app.use('/api/credits', creditRoutes);
+
+// AI Doctor Route (Proxy + Credit Check)
+app.use('/api/ai', aiRoutes);
+
+// 2. Connect to Database using environment variable
+// We remove the hardcoded string and the deprecated options (no longer needed in Mongoose 6+)
+const MONGO_URI = config.MONGO_URI;
+
+if (MONGO_URI) {
+  mongoose.connect(MONGO_URI)
+    .then(() => console.log('Database connected'))
+    .catch((err) => {
+      console.error('Database connection error (check MONGO_URI and the Atlas IP allow-list):', err.message);
+    });
+} else {
+  console.warn('MONGO_URI is not set: database features will not work');
+}
+
+// 3. API Routes
+// GET: Fetch all items (latest first) with farmer reputation
+app.get('/api/listings', async (req, res) => {
+  try {
+    const items = await Listing.find({ status: { $in: ['active', undefined] } })
+      .populate('farmer_id', 'username reputation_score is_verified_farmer total_sales')
+      .sort({ date: -1 });
+    res.json(items);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch listings" });
+  }
+});
+
+// POST: Add new item with farmer association
+// Cost: 50 credits
+app.post('/api/listings', authMiddleware, checkCredits(50), (req, res) => {
+  uploadListingImages(req, res, async (err) => {
+    if (err) return res.status(400).json({ error: err.message });
+    try {
+      const user = await User.findById(req.user.id);
+      if (!user) return res.status(401).json({ error: "User not found" });
+      if (user.role === 'buyer') return res.status(403).json({ error: "Buyers cannot create listings" });
+
+      const imageUrls = (req.files || []).map(
+        file => `/uploads/listings/${file.filename}`
+      );
+
+      const newItem = new Listing({
+        ...req.body,
+        images: imageUrls,
+        farmer_id: user._id,
+        farmerName: user.username,
+        status: 'active'
+      });
+      const savedItem = await newItem.save();
+      res.status(201).json(savedItem);
+    } catch (e) {
+      console.error("Failed to create listing", e);
+      res.status(400).json({ error: "Validation failed. Check your data." });
+    }
+  });
+});
+
+// DELETE: Remove a listing (only by the owner)
+app.delete('/api/listings/:id', async (req, res) => {
+  try {
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    const decoded = jwt.verify(token, require('./config').JWT_SECRET);
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      return res.status(401).json({ error: "User not found" });
+    }
+
+    const listing = await Listing.findById(req.params.id);
+    if (!listing) {
+      return res.status(404).json({ error: "Listing not found" });
+    }
+
+    // Check if user owns this listing
+    if (listing.farmerName !== user.username) {
+      return res.status(403).json({ error: "You can only delete your own listings" });
+    }
+
+    await Listing.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: "Listing deleted successfully" });
+  } catch (err) {
+    console.error("Delete error:", err);
+    res.status(500).json({ error: "Failed to delete listing" });
+  }
+});
+
+// New route for Price Trends
+app.get('/api/price-trends', (req, res) => {
+  // In a real production app, this would fetch from the Department of Agriculture website
+  // For the hackathon, we provide a dynamic JSON response
+  const trends = [
+    { month: 'Jan', Rice: 210, Chili: 850, Tea: 1100 },
+    { month: 'Feb', Rice: 225, Chili: 920, Tea: 1150 },
+    { month: 'Mar', Rice: 240, Chili: 780, Tea: 1050 },
+    { month: 'Apr', Rice: 215, Chili: 810, Tea: 1200 },
+    { month: 'May', Rice: 230, Chili: 890, Tea: 1250 },
+    { month: 'Jun', Rice: 255, Chili: 950, Tea: 1300 },
+  ];
+  res.json(trends);
+});
+
+app.get('/api/market-prices', (req, res) => {
+  // Simulated real-time data from different Sri Lankan Economic Centers
+  const marketData = [
+    { district: 'Dambulla', Rice: 220, Chili: 800, Carrot: 450 },
+    { district: 'Thambutthegama', Rice: 215, Chili: 780, Carrot: 420 },
+    { district: 'Keppetipola', Rice: 230, Chili: 850, Carrot: 380 },
+    { district: 'Colombo (Manning)', Rice: 250, Chili: 950, Carrot: 550 },
+    { district: 'Kandy', Rice: 245, Chili: 920, Carrot: 520 },
+  ];
+  res.json(marketData);
+});
+
+// ==========================================
+// LEGACY AUTH ROUTES (Backward Compatibility)
+// These routes support existing users without email
+// New registrations should use /api/auth/register
+// ==========================================
+
+app.post('/api/register', async (req, res) => {
+  try {
+    const { username, email, password, district, dsDivision, gnDivision, phone, role, officerId, department, designation } = req.body;
+
+    // If email is provided, redirect to new auth system
+    if (email) {
+      // Forward to new auth route
+      const authRouter = require('./routes/auth');
+      return authRouter.handle(req, res);
+    }
+
+    // Legacy registration for users without email (backward compatibility)
+    // 1. Check if user exists
+    let user = await User.findOne({ username });
+    if (user) return res.status(400).json({ msg: "User already exists" });
+
+    // 2. Validate officer ID if role is officer
+    if (role === 'officer') {
+      if (!officerId) {
+        return res.status(400).json({ msg: "Officer ID is required for agricultural instructors" });
+      }
+      const existingOfficer = await User.findOne({ officerId });
+      if (existingOfficer) {
+        return res.status(400).json({ msg: "Officer ID already registered" });
+      }
+    }
+
+    // 3. Hash Password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // 4. Create User (legacy - no email verification)
+    const userData = {
+      username,
+      email: `${username}@legacy.goviisuru.lk`, // Placeholder email for legacy users
+      password: hashedPassword,
+      district,
+      dsDivision,
+      gnDivision,
+      phone: phone || '',
+      role: role || 'farmer',
+      isEmailVerified: true // Legacy users are auto-verified
+    };
+
+    // Add officer-specific fields if applicable
+    if (role === 'officer') {
+      userData.officerId = officerId;
+      userData.department = department || null;
+      userData.designation = designation || null;
+      // Officers require admin approval
+      userData.isApproved = false;
+      userData.approvalStatus = 'pending';
+    }
+
+    user = new User(userData);
+    await user.save();
+
+    // 5. Return Token (Login the user immediately)
+    const token = jwt.sign(
+      {
+        id: user._id,
+        username: user.username,
+        role: user.role,
+        district: user.district,
+        dsDivision: user.dsDivision,
+        gnDivision: user.gnDivision
+      },
+      require('./config').JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    const userResponse = {
+      username,
+      district,
+      dsDivision,
+      gnDivision,
+      role: user.role
+    };
+
+    // Include officer fields in response if applicable
+    if (user.role === 'officer') {
+      userResponse.officerId = user.officerId;
+      userResponse.department = user.department;
+      userResponse.designation = user.designation;
+    }
+
+    res.json({ token, user: userResponse });
+
+  } catch (err) {
+    console.error('Registration error:', err);
+    res.status(500).send("Server Error");
+  }
+});
+
+app.post('/api/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    // 1. Find user by username or email
+    const user = await User.findOne({
+      $or: [
+        { username },
+        { email: username.toLowerCase() }
+      ]
+    });
+    if (!user) return res.status(400).json({ msg: "User does not exist" });
+
+    // 2. Check email verification (skip for legacy users)
+    if (!user.isEmailVerified && !user.email.endsWith('@legacy.goviisuru.lk')) {
+      return res.status(403).json({
+        msg: "Please verify your email before logging in",
+        code: 'EMAIL_NOT_VERIFIED',
+        email: user.email
+      });
+    }
+
+    // 2b. Check officer approval status
+    if (user.role === 'officer' && !user.isApproved) {
+      const statusMsg = user.approvalStatus === 'rejected'
+        ? `Your officer registration was rejected. Reason: ${user.rejectionReason || 'No reason provided'}`
+        : 'Your officer account is pending admin approval. You will be notified once approved.';
+      return res.status(403).json({
+        msg: statusMsg,
+        code: 'OFFICER_NOT_APPROVED',
+        approvalStatus: user.approvalStatus
+      });
+    }
+
+    // Check if account is flagged
+    if (user.account_flagged) {
+      return res.status(403).json({
+        msg: "Your account has been flagged for suspicious activity. Please contact support.",
+        code: 'ACCOUNT_FLAGGED'
+      });
+    }
+
+    // 3. Validate password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(400).json({ msg: "Invalid credentials" });
+
+    // 4. Return Token with role information
+    const token = jwt.sign(
+      {
+        id: user._id,
+        username: user.username,
+        role: user.role,
+        district: user.district,
+        dsDivision: user.dsDivision,
+        gnDivision: user.gnDivision
+      },
+      require('./config').JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    const userResponse = {
+      username: user.username,
+      email: user.email,
+      district: user.district,
+      dsDivision: user.dsDivision,
+      gnDivision: user.gnDivision,
+      role: user.role || 'farmer',
+      credits: user.credits !== undefined ? user.credits : 200,
+      dailyLimit: user.dailyLimit !== undefined ? user.dailyLimit : 200,
+      isPremium: user.isPremium
+    };
+
+    // Include officer fields if user is an officer
+    if (user.role === 'officer') {
+      userResponse.officerId = user.officerId;
+      userResponse.department = user.department;
+      userResponse.designation = user.designation;
+    }
+
+    res.json({ token, user: userResponse });
+
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).send("Server Error");
+  }
+});
+
+// Health check endpoint for Docker & load balancers
+app.get('/health', async (req, res) => {
+  try {
+    // Check MongoDB connection
+    const mongoHealth = mongoose.connection.readyState === 1 ? 'ok' : 'disconnected';
+
+    res.json({
+      status: mongoHealth === 'ok' ? 'healthy' : 'degraded',
+      timestamp: new Date().toISOString(),
+      database: mongoHealth,
+      uptime: process.uptime()
+    });
+  } catch (err) {
+    res.status(503).json({
+      status: 'unhealthy',
+      error: err.message
+    });
+  }
+});
+
+// 5. Start Server using dynamic port for deployment
+if (require.main === module) {
+  app.listen(config.PORT, () => console.log(`Govi Isuru API listening on port ${config.PORT}`));
+}
+
+module.exports = app;

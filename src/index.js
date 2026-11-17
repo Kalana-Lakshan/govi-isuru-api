@@ -3,6 +3,9 @@ const config = require('./config');
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const compression = require('compression');
+const helmet = require('helmet');
+const limits = require('./middleware/rateLimits');
 const multer = require('multer');
 const fs = require('fs');
 
@@ -62,11 +65,20 @@ const uploadListingImages = multer({
 }).array('images', 5);
 
 // Middleware
+app.set('trust proxy', 1);
+app.disable('x-powered-by');
+// Images in /uploads are shown by the web app on another origin.
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' }, contentSecurityPolicy: false }));
+app.use(compression({ threshold: 1024 })); // gzip JSON (listings, news, yield history) for slow mobile data
 app.use(cors(config.CORS_ORIGINS.length ? { origin: config.CORS_ORIGINS, credentials: true } : {}));
+app.use('/api', limits.api);
+app.use(['/api/auth/login', '/api/login', '/api/auth/register', '/api/register', '/api/auth/forgot-password'], limits.auth);
+app.use(['/api/ai/predict', '/api/yield/predict', '/api/suitability'], limits.ai);
 app.use(express.json({ limit: '1mb' }));
 
 // Serve uploaded listing images as static files
-app.use('/uploads', express.static(config.UPLOADS_DIR));
+// Upload file names are unique, so browsers may cache them for a week.
+app.use('/uploads', express.static(config.UPLOADS_DIR, { maxAge: '7d', immutable: true, fallthrough: false }));
 
 // Chatbot API Routes
 app.use('/api/chatbot', chatbotRoutes);
@@ -128,7 +140,7 @@ app.use('/api/ai', aiRoutes);
 const MONGO_URI = config.MONGO_URI;
 
 if (MONGO_URI) {
-  mongoose.connect(MONGO_URI)
+  mongoose.connect(MONGO_URI, { maxPoolSize: 10, serverSelectionTimeoutMS: 10000, autoIndex: !config.isProd })
     .then(() => console.log('Database connected'))
     .catch((err) => {
       console.error('Database connection error (check MONGO_URI and the Atlas IP allow-list):', err.message);
@@ -141,9 +153,26 @@ if (MONGO_URI) {
 // GET: Fetch all items (latest first) with farmer reputation
 app.get('/api/listings', async (req, res) => {
   try {
-    const items = await Listing.find({ status: { $in: ['active', undefined] } })
-      .populate('farmer_id', 'username reputation_score is_verified_farmer total_sales')
-      .sort({ date: -1 });
+    // Paged (newest first). The response stays a plain array for the existing screens;
+    // the total is in X-Total-Count. ?page=1&limit=60 (limit max 200).
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 100, 1), 200);
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const filter = { status: { $in: ['active', null] } };
+    if (req.query.district) {
+      const d = String(req.query.district).replace(/[^\w\s-]/g, '');
+      filter.$or = [{ district: new RegExp(`^${d}$`, 'i') }, { location: new RegExp(d, 'i') }];
+    }
+    if (req.query.crop) filter.cropType = new RegExp(String(req.query.crop).replace(/[^\w\s-]/g, ''), 'i');
+    const [items, total] = await Promise.all([
+      Listing.find(filter)
+        .populate('farmer_id', 'username reputation_score is_verified_farmer total_sales')
+        .sort({ date: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit)
+        .lean(),
+      Listing.countDocuments(filter),
+    ]);
+    res.set('X-Total-Count', String(total));
     res.json(items);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch listings" });
@@ -449,7 +478,16 @@ app.get('/health', async (req, res) => {
 
 // 5. Start Server using dynamic port for deployment
 if (require.main === module) {
-  app.listen(config.PORT, () => console.log(`Govi Isuru API listening on port ${config.PORT}`));
+  const server = app.listen(config.PORT, () => console.log(`Govi Isuru API listening on port ${config.PORT}`));
+  server.keepAliveTimeout = 65 * 1000; // longer than the hosting proxy's idle timeout
+  // Finish in-flight requests and close the database cleanly when the host restarts the service.
+  const shutdown = (signal) => {
+    console.log(`${signal}: shutting down`);
+    server.close(() => mongoose.connection.close(false).finally(() => process.exit(0)));
+    setTimeout(() => process.exit(1), 10000).unref();
+  };
+  process.on('SIGTERM', shutdown);
+  process.on('SIGINT', shutdown);
 }
 
 module.exports = app;

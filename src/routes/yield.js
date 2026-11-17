@@ -5,10 +5,11 @@ const authMiddleware = require('../middleware/authMiddleware');
 const checkCredits = require('../middleware/creditMiddleware');
 const ai = require('../services/aiClient');
 const User = require('../models/User');
+const districts = require('../utils/districts');
 
 const router = express.Router();
 
-const titleCase = (s) => String(s || '').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+const titleCase = districts.display;
 const season = (s) => (String(s || 'maha').toLowerCase().startsWith('y') ? 'yala' : 'maha');
 const num = (v, d) => (Number.isFinite(Number(v)) && Number(v) >= 0 ? Number(v) : d);
 
@@ -31,10 +32,10 @@ function fail(res, err) {
 // History changes only with a new DCS release: cache per district for 6 hours.
 const historyCache = new Map();
 async function history(district) {
-  const key = district.toUpperCase();
+  const key = districts.forYield(district);
   const hit = historyCache.get(key);
   if (hit && Date.now() - hit.at < 6 * 3600 * 1000) return hit.data;
-  const data = await ai.yieldHistory({ district });
+  const data = await ai.yieldHistory({ district: districts.forYield(district) });
   historyCache.set(key, { at: Date.now(), data });
   return data;
 }
@@ -79,8 +80,14 @@ router.get('/predict', authMiddleware, checkCredits(20), async (req, res) => {
     return res.status(400).json({ success: false, error: 'district is required' });
   }
   try {
-    const f = await ai.yieldForecast({ district, season: s, area_ha: area });
+    const [f, h] = await Promise.all([
+      ai.yieldForecast({ district: districts.forYield(district), season: s, area_ha: area }),
+      history(district).catch(() => null),
+    ]);
     const y = f.yield_kg_ha;
+    const last10 = h ? series(h, s).slice(-10).map((r) => r.yield_kg_ha) : [];
+    const mean = last10.reduce((a, b) => a + b, 0) / (last10.length || 1);
+    const sd = Math.sqrt(last10.reduce((a, b) => a + (b - mean) ** 2, 0) / (last10.length || 1));
     const harvest = f.expected_harvest_kg || {};
     const p50kg = harvest.p50 ?? Math.round(y.p50 * area);
     return res.json({
@@ -95,6 +102,10 @@ router.get('/predict', authMiddleware, checkCredits(20), async (req, res) => {
       total_production_kg: p50kg,
       unit: 'metric tons',
       yield_range: { min: y.p10, max: y.p90 },
+      // 0.8 = share of past seasons that fell inside the p10-p90 range in the rolling backtest
+      confidence: 0.8,
+      // 1 - coefficient of variation of the last 10 seasons' yields (1 = very steady)
+      stability_index: last10.length >= 3 ? Number(Math.max(0, 1 - sd / mean).toFixed(3)) : null,
       // full information
       forecast: { yield_kg_ha: y, expected_harvest_kg: harvest, interval: f.interval || '80 %' },
       method: f.method,
@@ -121,7 +132,7 @@ router.get('/profit', authMiddleware, checkCredits(10), async (req, res) => {
     return res.status(400).json({ success: false, error: 'district and price_per_kg are required' });
   }
   try {
-    const f = await ai.yieldForecast({ district, season: s, area_ha: area });
+    const f = await ai.yieldForecast({ district: districts.forYield(district), season: s, area_ha: area });
     const totalCost = costPerHa * area;
     const at = (q) => {
       const kg = f.yield_kg_ha[q] * area;

@@ -12,6 +12,7 @@ const User = require('../models/User');
 const UnknownCase = require('../models/UnknownCase');
 const config = require('../config');
 const { present } = require('../services/aiPresenter');
+const { checkUnknownOutbreak } = require('../services/unknownOutbreakService');
 
 const router = express.Router();
 const upload = multer({
@@ -93,6 +94,8 @@ async function predict(req, res) {
         modelVersion: result.model?.version,
       });
       body.case_id = doc._id;
+      checkUnknownOutbreak({ crop: doc.crop, district: doc.district })
+        .catch((err) => console.error('Outbreak check failed:', err.message));
     } catch (err) {
       console.error('Could not store unknown case:', err.message);
     }

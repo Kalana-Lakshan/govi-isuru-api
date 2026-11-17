@@ -3,6 +3,7 @@
 const express = require('express');
 const ai = require('../services/aiClient');
 const User = require('../models/User');
+const districts = require('../utils/districts');
 
 const router = express.Router();
 
@@ -21,17 +22,18 @@ const FACTOR_TEXT = {
 /**
  * POST /api/suitability/recommend
  * Body (camelCase from the web form, snake_case also accepted):
- *   district, season, soilPH|soil_ph, temperature|temperature_c, rainfall|season_rainfall_mm,
- *   annualRainfall|annual_rainfall_mm, irrigation|irrigated, drainage, soilType|texture, altitude|altitude_m
+ *   district, season, soilPH|soil_ph, temperature|temperature_c, seasonRainfall|season_rainfall_mm,
+ *   rainfall|annualRainfall|annual_rainfall_mm, irrigation|irrigated, drainage, soilType|texture, altitude|altitude_m
  */
 function buildPayload(b = {}) {
   return {
-    district: b.district || undefined,
+    district: b.district ? districts.forClimate(b.district) : undefined,
     season: lower(b.season)?.startsWith('y') ? 'yala' : 'maha',
     soil_ph: numOrUndef(b.soil_ph ?? b.soilPH),
     temperature_c: numOrUndef(b.temperature_c ?? b.temperature),
-    season_rainfall_mm: numOrUndef(b.season_rainfall_mm ?? b.rainfall),
-    annual_rainfall_mm: numOrUndef(b.annual_rainfall_mm ?? b.annualRainfall),
+    season_rainfall_mm: numOrUndef(b.season_rainfall_mm ?? b.seasonRainfall),
+    // the web form's "Annual Rainfall (mm)" field is called `rainfall`
+    annual_rainfall_mm: numOrUndef(b.annual_rainfall_mm ?? b.annualRainfall ?? b.rainfall),
     irrigated: Boolean(b.irrigated ?? b.irrigation ?? false),
     drainage: DRAINAGE[lower(b.drainage)] || undefined,
     texture: TEXTURE[lower(b.texture ?? b.soilType)] || undefined,

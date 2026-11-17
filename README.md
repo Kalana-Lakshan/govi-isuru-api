@@ -24,6 +24,7 @@ browser ──> govi-isuru-web (Next.js, Vercel) ──> govi-isuru-api (this re
 | Marketplace | `/api/listings`, `/api/saved-listings/*`, `/api/reputation/*` |
 | Consultations | `/api/manual-bookings/*` (booking workflow, Daily.co video) |
 | Assistant | `/api/chatbot/*`, `/api/llama-chatbot/*` |
+| Unknown-disease alerts | officers get a notification when 3+ unidentified photos of one crop come from their district within 7 days |
 | Other | `/api/news/*`, `/api/weather/*`, `/api/credits/*`, `/api/admin/*`, `/health` |
 
 ### AI Doctor responses
@@ -87,3 +88,22 @@ src/
 test/             node:test suites (a fake AI service; no database needed)
 scripts/          seeding and migrations
 ```
+
+## Performance and protection
+
+* Responses are gzip-compressed. Uploaded images are served with a 7-day browser cache.
+* Marketplace listings are paged (`?page=&limit=`, at most 200; the total is in `X-Total-Count`) and read with
+  lean queries.
+* Weather lookups are cached per ~1 km area: 10 minutes for current weather, 30 minutes for forecasts. AI news
+  summaries are cached with a size limit. Yield history and AI class lists are cached too.
+* Rate limits per IP:
+
+  | Routes | Limit |
+  |---|---|
+  | All API routes | 900 requests per 15 minutes |
+  | Sign-in, register, forgot password | 30 requests per 15 minutes |
+  | AI, yield and suitability | 40 requests per 10 minutes |
+
+* Security headers are set with `helmet`.
+* On shutdown the server finishes in-flight requests and closes the database cleanly.
+* District names are matched across data sources (`src/utils/districts.js`).

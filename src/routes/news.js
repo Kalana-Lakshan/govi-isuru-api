@@ -39,7 +39,8 @@ const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 let clickStats = {};
 
 // AI Summary cache (to avoid regenerating summaries)
-let summaryCache = {};
+// bounded: at most 1000 summaries, each kept for 7 days
+const summaryCache = new (require('../utils/ttlCache'))({ ttlMs: 7 * 24 * 3600 * 1000, max: 1000 });
 
 // Urgent news keywords for push notifications
 const urgentKeywords = [
@@ -228,8 +229,8 @@ async function generateSummary(article, lang = 'en') {
   const cacheKey = `${article.id}_${lang}`;
   
   // Return cached summary if exists
-  if (summaryCache[cacheKey]) {
-    return summaryCache[cacheKey];
+  if (summaryCache.get(cacheKey)) {
+    return summaryCache.get(cacheKey);
   }
 
   const text = article.content || article.description || '';
@@ -295,7 +296,7 @@ async function generateSummary(article, lang = 'en') {
   };
 
   // Cache the summary
-  summaryCache[cacheKey] = summary;
+  summaryCache.set(cacheKey, summary);
   
   return summary;
 }

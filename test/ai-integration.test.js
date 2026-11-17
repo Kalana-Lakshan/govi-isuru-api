@@ -141,3 +141,27 @@ test('presenter: other statuses carry a message and no diagnosis', () => {
   assert.deepEqual(bad.advice, ['Use daylight']);
   assert.equal(bad.dev_model, true);
 });
+
+test('responses are compressed and carry security headers', async () => {
+  const r = await fetch(`${base}/api/ai/classes`, { headers: { 'Accept-Encoding': 'gzip' } });
+  assert.equal(r.status, 200);
+  assert.equal(r.headers.get('x-content-type-options'), 'nosniff');
+  assert.equal(r.headers.get('x-powered-by'), null);
+});
+
+test('district names are matched across data sources', () => {
+  const d = require('../src/utils/districts');
+  assert.equal(d.forYield('Kilinochchi'), 'KILLINOCHCHI');
+  assert.equal(d.forYield('NuwaraEliya'), 'NUWARA ELIYA');
+  assert.equal(d.forClimate('Monaragala'), 'MONERAGALA');
+  assert.equal(d.display('MULLATIVU'), 'Mullaitivu');
+  assert.equal(d.canonical('atlantis'), null);
+});
+
+test('unknown-disease outbreak rule: 3 cases in a week, notify once', () => {
+  const { shouldNotify, MIN_CASES } = require('../src/services/unknownOutbreakService');
+  assert.equal(MIN_CASES, 3);
+  assert.equal(shouldNotify(2, false), false);
+  assert.equal(shouldNotify(3, false), true);
+  assert.equal(shouldNotify(9, true), false);
+});

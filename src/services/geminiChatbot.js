@@ -6,8 +6,18 @@ const {
   generateMockResponse,
 } = require('./chatbotKnowledge');
 
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const LOCATION = process.env.GOOGLE_VERTEX_LOCATION || 'us-central1';
-const MODEL = process.env.GOOGLE_GEMINI_MODEL || 'gemini-2.0-flash-001';
+const DEFAULT_MODEL = process.env.GOOGLE_GEMINI_MODEL || 'gemini-2.5-flash';
+const GEMINI_TIMEOUT_MS = parseInt(process.env.GOOGLE_GEMINI_TIMEOUT_MS || '10000', 10);
+
+function useGeminiApiKey() {
+  return Boolean(GEMINI_API_KEY);
+}
+
+function isGeminiAvailable() {
+  return useGeminiApiKey() || isGoogleConfigured();
+}
 
 function toGeminiContents(history = [], userMessage = '') {
   const contents = [];
@@ -30,12 +40,87 @@ async function getAccessToken() {
   return typeof token === 'string' ? token : token?.token;
 }
 
-function endpoint(stream = false) {
+function endpointForApiKey(model) {
+  return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+}
+
+function endpointForVertex(model) {
   const project = getGoogleProjectId();
   if (!project) throw new Error('Google project id missing');
-  const action = stream ? 'streamGenerateContent' : 'generateContent';
-  const qs = stream ? '?alt=sse' : '';
-  return `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${project}/locations/${LOCATION}/publishers/google/models/${MODEL}:${action}${qs}`;
+  return `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${project}/locations/${LOCATION}/publishers/google/models/${model}:generateContent`;
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = GEMINI_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error(`Gemini request timed out after ${timeoutMs}ms`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function callGemini(model, body) {
+  let url, headers;
+
+  if (useGeminiApiKey()) {
+    url = endpointForApiKey(model);
+    headers = { 'Content-Type': 'application/json' };
+  } else {
+    const token = await getAccessToken();
+    url = endpointForVertex(model);
+    headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+  }
+
+  const res = await fetchWithTimeout(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Gemini error ${res.status} (${model}): ${errText.slice(0, 300)}`);
+  }
+
+  const data = await res.json();
+  const answer =
+    data?.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('')?.trim() || '';
+  if (!answer) throw new Error(`Empty Gemini response (${model})`);
+  return answer;
+}
+
+async function generateWithFallback(userMessage, history = [], options = {}) {
+  const body = {
+    systemInstruction: { parts: [{ text: buildSystemPrompt(options) }] },
+    contents: toGeminiContents(history, userMessage),
+    generationConfig: {
+      temperature: options.temperature || 0.6,
+      maxOutputTokens: options.max_tokens || 1024,
+    },
+  };
+
+  const model = DEFAULT_MODEL;
+  try {
+    const answer = await callGemini(model, body);
+    return { answer, model };
+  } catch (err) {
+    console.warn(`Gemini model ${model} failed:`, err.message.slice(0, 240));
+    throw err;
+  }
+}
+
+async function* chunkText(text, size = 24) {
+  const value = String(text || '');
+  for (let i = 0; i < value.length; i += size) {
+    yield value.slice(i, i + size);
+    await new Promise((r) => setTimeout(r, 12));
+  }
 }
 
 async function generateGeminiResponse(userMessage, history = [], options = {}) {
@@ -51,45 +136,17 @@ async function generateGeminiResponse(userMessage, history = [], options = {}) {
     };
   }
 
-  if (!isGoogleConfigured()) {
-    return { success: false, error: 'Google service account not configured' };
+  if (!isGeminiAvailable()) {
+    return { success: false, error: 'Gemini is not configured (set GEMINI_API_KEY or Google service account)' };
   }
 
   try {
-    const token = await getAccessToken();
-    const body = {
-      systemInstruction: { parts: [{ text: buildSystemPrompt(options) }] },
-      contents: toGeminiContents(history, userMessage),
-      generationConfig: {
-        temperature: options.temperature || 0.6,
-        maxOutputTokens: options.max_tokens || 1024,
-      },
-    };
-
-    const res = await fetch(endpoint(false), {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`Gemini error ${res.status}: ${errText}`);
-    }
-
-    const data = await res.json();
-    const answer =
-      data?.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('')?.trim() || '';
-    if (!answer) throw new Error('Empty Gemini response');
-
+    const { answer, model } = await generateWithFallback(userMessage, history, options);
     return {
       success: true,
       answer,
-      model: MODEL,
-      source: 'Google Vertex Gemini',
+      model,
+      source: useGeminiApiKey() ? 'Google Gemini API' : 'Google Vertex Gemini',
     };
   } catch (err) {
     console.error('Gemini generate error:', err.message);
@@ -108,74 +165,31 @@ async function* streamGeminiResponse(userMessage, history = [], options = {}) {
   const homeView = options.homeView || 'farmerHub';
 
   if (!isOnTopicQuery(userMessage)) {
-    yield { type: 'token', content: offTopicRefusal(language, homeView) };
+    const refusal = offTopicRefusal(language, homeView);
+    for await (const part of chunkText(refusal)) {
+      yield { type: 'token', content: part };
+    }
     yield { type: 'done', model: 'Guardrail', source: 'Topic Guardrail' };
     return;
   }
 
-  if (!isGoogleConfigured()) {
-    yield { type: 'error', content: 'Google service account not configured' };
+  if (!isGeminiAvailable()) {
+    yield { type: 'error', content: 'Gemini is not configured' };
     return;
   }
 
   try {
-    const token = await getAccessToken();
-    const body = {
-      systemInstruction: { parts: [{ text: buildSystemPrompt(options) }] },
-      contents: toGeminiContents(history, userMessage),
-      generationConfig: {
-        temperature: options.temperature || 0.6,
-        maxOutputTokens: options.max_tokens || 1024,
-      },
-    };
-
-    const res = await fetch(endpoint(true), {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        Accept: 'text/event-stream',
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(`Gemini stream error ${res.status}: ${errText}`);
+    const { answer, model } = await generateWithFallback(userMessage, history, options);
+    for await (const part of chunkText(answer)) {
+      yield { type: 'token', content: part };
     }
-
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-
-      for (const raw of lines) {
-        const line = raw.trim();
-        if (!line.startsWith('data:')) continue;
-        const data = line.slice(5).trim();
-        if (!data || data === '[DONE]') continue;
-        try {
-          const parsed = JSON.parse(data);
-          const parts = parsed?.candidates?.[0]?.content?.parts || [];
-          for (const part of parts) {
-            if (part.text) yield { type: 'token', content: part.text };
-          }
-        } catch {
-          /* ignore */
-        }
-      }
-    }
-
-    yield { type: 'done', model: MODEL, source: 'Google Vertex Gemini' };
+    yield { type: 'done', model, source: useGeminiApiKey() ? 'Google Gemini API' : 'Google Vertex Gemini' };
   } catch (err) {
     console.error('Gemini stream error:', err.message);
-    yield { type: 'token', content: generateMockResponse(userMessage, language, options) };
+    const mock = generateMockResponse(userMessage, language, options);
+    for await (const part of chunkText(mock)) {
+      yield { type: 'token', content: part };
+    }
     yield { type: 'done', model: 'Assistant', source: 'Local Knowledge Base' };
   }
 }
@@ -183,6 +197,6 @@ async function* streamGeminiResponse(userMessage, history = [], options = {}) {
 module.exports = {
   generateGeminiResponse,
   streamGeminiResponse,
-  isGoogleConfigured,
-  MODEL,
+  isGoogleConfigured: isGeminiAvailable,
+  MODEL: DEFAULT_MODEL,
 };

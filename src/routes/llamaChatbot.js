@@ -63,8 +63,10 @@ router.post('/chat/stream', async (req, res) => {
     res.setHeader('X-Accel-Buffering', 'no');
     if (typeof res.flushHeaders === 'function') res.flushHeaders();
 
+    // Only stop when the response socket closes — req "close" fires too early
+    // after the body is read and was silencing all SSE writes.
     let closed = false;
-    req.on('close', () => {
+    res.on('close', () => {
       closed = true;
     });
 
@@ -110,7 +112,11 @@ router.post('/voice/stt', upload.single('audio'), async (req, res) => {
     });
   } catch (error) {
     console.error('Voice STT error:', error);
-    return res.status(500).json({ error: 'Speech recognition failed', message: error.message });
+    const raw = error.message || '';
+    const message = /PERMISSION_DENIED|has not been used|is disabled/i.test(raw)
+      ? 'Cloud Speech-to-Text API is disabled on the Google Cloud project. Enable speech.googleapis.com (and texttospeech.googleapis.com for replies), wait a few minutes, then try again.'
+      : raw || 'Speech recognition failed';
+    return res.status(500).json({ error: 'Speech recognition failed', message });
   }
 });
 
@@ -141,14 +147,22 @@ router.post('/voice/tts', async (req, res) => {
 });
 
 router.get('/voice/status', (req, res) => {
+  const google = isGoogleConfigured();
   res.json({
-    googleConfigured: isGoogleConfigured(),
+    googleConfigured: google,
     languages: ['en', 'si', 'ta'],
     features: {
-      duplexVoice: isGoogleConfigured(),
-      stt: isGoogleConfigured(),
-      tts: isGoogleConfigured(),
-      gemini: isGoogleConfigured(),
+      duplexVoice: google,
+      liveVoice: google,
+      stt: google,
+      tts: google,
+      gemini: google,
+    },
+    live: {
+      path: '/api/llama-chatbot/voice/live',
+      inputRate: 16000,
+      outputRate: 24000,
+      model: process.env.GOOGLE_GEMINI_LIVE_MODEL || 'gemini-live-2.5-flash-native-audio',
     },
   });
 });

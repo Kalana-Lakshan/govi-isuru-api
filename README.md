@@ -23,7 +23,8 @@ browser ──> govi-isuru-web (Next.js, Vercel) ──> govi-isuru-api (this re
 | Officers | `/api/officer/*`, `/api/officer-workflow/*` (field visits, internal notes, performance) |
 | Marketplace | `/api/listings`, `/api/saved-listings/*`, `/api/reputation/*` |
 | Consultations | `/api/manual-bookings/*` (booking workflow, Daily.co video) |
-| Assistant | `/api/chatbot/*`, `/api/llama-chatbot/*` |
+| Assistant | `/api/chatbot/*`, `/api/llama-chatbot/*`, live voice WebSocket `/api/llama-chatbot/voice/live?token=` (Gemini Live on Vertex AI; signed-in users only) |
+| WhatsApp | `/api/whatsapp/*`: account linking for farmers; `/internal/*` routes for the bot (shared key). The bot itself is in [`whatsapp-bot/`](whatsapp-bot/) |
 | Unknown-disease alerts | officers get a notification when 3+ unidentified photos of one crop come from their district within 7 days |
 | Other | `/api/news/*`, `/api/weather/*`, `/api/credits/*`, `/api/admin/*`, `/health` |
 
@@ -86,6 +87,10 @@ To run the full stack, start MongoDB, the AI service and the API with `docker co
   object storage before production use.
 
 In production the server refuses to start without `JWT_SECRET` and `REFRESH_TOKEN_SECRET`, each at least 16 characters.
+
+## WhatsApp bot
+
+`whatsapp-bot/` is a separate Node service (Baileys) that talks to this API. Farmers can diagnose leaves, ask questions by voice, check prices, weather, alerts, suitability and yield, and book officers from WhatsApp. Its login is backed up in MongoDB (`BotAuthState`), so a restart on hosting without a disk does not need a new QR scan. Run it with `cd whatsapp-bot && npm install && npm start` (settings in `whatsapp-bot/.env.example`).
 
 ## Documentation
 

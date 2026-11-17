@@ -1,5 +1,6 @@
 const path = require('path');
 const config = require('./config');
+const http = require('http');
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -31,13 +32,17 @@ const savedListingsRoutes = require('./routes/savedListings');
 const adminRoutes = require('./routes/admin');
 const aiRoutes = require('./routes/ai');
 const creditRoutes = require('./routes/credits');
+const whatsappRoutes = require('./routes/whatsapp');
 const { registerBookingEventHandlers } = require('./events/registerBookingEventHandlers');
+const { registerWhatsAppEventHandlers } = require('./events/registerWhatsAppEventHandlers');
+const { attachVoiceLiveProxy } = require('./ws/voiceLiveProxy');
 
 const authMiddleware = require('./middleware/authMiddleware');
 const checkCredits = require('./middleware/creditMiddleware');
 
 const app = express();
 registerBookingEventHandlers();
+registerWhatsAppEventHandlers();
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(config.UPLOADS_DIR, 'listings');
@@ -74,7 +79,9 @@ app.use(cors(config.CORS_ORIGINS.length ? { origin: config.CORS_ORIGINS, credent
 app.use('/api', limits.api);
 app.use(['/api/auth/login', '/api/login', '/api/auth/register', '/api/register', '/api/auth/forgot-password'], limits.auth);
 app.use(['/api/ai/predict', '/api/yield/predict', '/api/suitability'], limits.ai);
-app.use(express.json({ limit: '1mb' }));
+const jsonSmall = express.json({ limit: '1mb' });
+const jsonBotAuth = express.json({ limit: '16mb' }); // WhatsApp bot login backup
+app.use((req, res, next) => (req.path === '/api/whatsapp/internal/auth/set' ? jsonBotAuth : jsonSmall)(req, res, next));
 
 // Serve uploaded listing images as static files
 // Upload file names are unique, so browsers may cache them for a week.
@@ -134,6 +141,9 @@ app.use('/api/credits', creditRoutes);
 
 // AI Doctor Route (Proxy + Credit Check)
 app.use('/api/ai', aiRoutes);
+
+// WhatsApp bridge (account linking + bot-only internal routes, guarded by WHATSAPP_BOT_KEY)
+app.use('/api/whatsapp', whatsappRoutes);
 
 // 2. Connect to Database using environment variable
 // We remove the hardcoded string and the deprecated options (no longer needed in Mongoose 6+)
@@ -478,7 +488,10 @@ app.get('/health', async (req, res) => {
 
 // 5. Start Server using dynamic port for deployment
 if (require.main === module) {
-  const server = app.listen(config.PORT, () => console.log(`Govi Isuru API listening on port ${config.PORT}`));
+  // HTTP + WebSocket (live voice needs the WS upgrade)
+  const server = http.createServer(app);
+  attachVoiceLiveProxy(server);
+  server.listen(config.PORT, () => console.log(`Govi Isuru API listening on port ${config.PORT}`));
   server.keepAliveTimeout = 65 * 1000; // longer than the hosting proxy's idle timeout
   // Finish in-flight requests and close the database cleanly when the host restarts the service.
   const shutdown = (signal) => {

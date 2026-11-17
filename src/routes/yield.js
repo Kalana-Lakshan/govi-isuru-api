@@ -153,7 +153,13 @@ router.get('/trends', async (req, res) => {
   try {
     const s = season(req.query.season);
     const h = await history(district);
-    res.json({ success: true, district: titleCase(district), season: s, unit: h.unit, data: series(h, s) });
+    const data = series(h, s);
+    const label = s === 'maha' ? 'Maha' : 'Yala';
+    res.json({
+      success: true, district: titleCase(district), season: s, unit: h.unit, data,
+      // shape read by the web app's trend list (newest first)
+      trends: data.slice(-15).reverse().map((r) => ({ year: r.year, season: label, avg_yield_kg_ha: r.yield_kg_ha })),
+    });
   } catch (err) {
     fail(res, err);
   }
@@ -173,6 +179,9 @@ router.get('/warning', async (req, res) => {
       risk_level: r.level,
       basis: `Share of the last ${r.checked} seasons whose yield fell more than 15 % below the previous 5-season mean`,
       shortfall_years: r.years,
+      warnings: r.years.length ? [{
+        message: `Sharp yield drops (more than 15 % below the 5-season average) happened in ${r.years.join(', ')}.`,
+      }] : [],
       recommendations: r.level === 'low' ? [] : [{
         en: 'Yields here have dropped sharply in some seasons. Keep a reserve for inputs and follow weather and pest alerts.',
       }],
@@ -198,6 +207,10 @@ router.get('/rankings', async (req, res) => {
           forecast_kg_ha: f.yield_kg_ha.p50,
           range_kg_ha: [f.yield_kg_ha.p10, f.yield_kg_ha.p90],
           avg_yield: Math.round(mean),
+          // change of the last 5 seasons' mean vs the 5 before (fraction)
+          trend: last10.length === 10
+            ? Number((last10.slice(5).reduce((a, b) => a + b, 0) / last10.slice(0, 5).reduce((a, b) => a + b, 0) - 1).toFixed(3))
+            : null,
           stability: mean ? Number((1 - sd / mean).toFixed(3)) : null,
         };
       } catch {
@@ -205,7 +218,7 @@ router.get('/rankings', async (req, res) => {
       }
     }));
     const rankings = rows.filter(Boolean).sort((a, b) => b.forecast_kg_ha - a.forecast_kg_ha)
-      .map((r, i) => ({ rank: i + 1, ...r }));
+      .map((r, i, all) => ({ rank: i + 1, ...r, overall_score: Math.round((100 * r.forecast_kg_ha) / all[0].forecast_kg_ha) }));
     res.json({ success: true, season: s, rankings, source: 'Department of Census and Statistics, Sri Lanka' });
   } catch (err) {
     fail(res, err);

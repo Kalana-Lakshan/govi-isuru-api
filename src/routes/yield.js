@@ -64,7 +64,8 @@ function shortfallRisk(data) {
 router.get('/districts', async (req, res) => {
   try {
     const d = await ai.yieldDistricts();
-    res.json({ ...d, districts: d.districts.map(titleCase) });
+    // DCS also reports irrigation zones (e.g. "MAHAWELI 'H'"): only the 25 districts are offered
+    res.json({ ...d, districts: d.districts.map(districts.canonical).filter(Boolean) });
   } catch (err) {
     fail(res, err);
   }
@@ -206,8 +207,8 @@ router.get('/warning', async (req, res) => {
 router.get('/rankings', async (req, res) => {
   try {
     const s = season(req.query.season);
-    const { districts } = await ai.yieldDistricts();
-    const rows = await Promise.all(districts.map(async (d) => {
+    const { districts: all } = await ai.yieldDistricts();
+    const rows = await Promise.all(all.filter((d) => districts.canonical(d)).map(async (d) => {
       try {
         const [f, h] = await Promise.all([ai.yieldForecast({ district: d, season: s }), history(d)]);
         const last10 = series(h, s).slice(-10).map((r) => r.yield_kg_ha);

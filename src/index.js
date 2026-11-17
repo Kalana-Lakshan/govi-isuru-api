@@ -1,5 +1,6 @@
 const path = require('path');
 const config = require('./config');
+const imageStore = require('./services/imageStore');
 const http = require('http');
 const express = require('express');
 const mongoose = require('mongoose');
@@ -44,24 +45,9 @@ const app = express();
 registerBookingEventHandlers();
 registerWhatsAppEventHandlers();
 
-// Ensure uploads directory exists
-const uploadsDir = path.join(config.UPLOADS_DIR, 'listings');
-try {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-} catch (e) {
-  console.warn('Could not create uploads dir:', e.message);
-}
-
-// Multer setup for listing images (disk storage, max 5 images, 5MB each)
-const listingStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
-  filename: (req, file, cb) => {
-    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, `listing-${unique}${path.extname(file.originalname)}`);
-  }
-});
+// Listing photos are held in memory and then stored by services/imageStore (Cloudinary in production).
 const uploadListingImages = multer({
-  storage: listingStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) cb(null, true);
@@ -150,8 +136,12 @@ app.use('/api/whatsapp', whatsappRoutes);
 const MONGO_URI = config.MONGO_URI;
 
 if (MONGO_URI) {
-  mongoose.connect(MONGO_URI, { maxPoolSize: 10, serverSelectionTimeoutMS: 10000, autoIndex: !config.isProd })
-    .then(() => console.log('Database connected'))
+  mongoose.connect(MONGO_URI, { maxPoolSize: 10, serverSelectionTimeoutMS: 10000 })
+    .then(() => {
+      console.log('Database connected');
+      // re-register officer-confirmed diseases if the AI service restarted without them
+      if (require.main === module) require('./services/prototypeSync').startPrototypeSync();
+    })
     .catch((err) => {
       console.error('Database connection error (check MONGO_URI and the Atlas IP allow-list):', err.message);
     });
@@ -199,9 +189,9 @@ app.post('/api/listings', authMiddleware, checkCredits(50), (req, res) => {
       if (!user) return res.status(401).json({ error: "User not found" });
       if (user.role === 'buyer') return res.status(403).json({ error: "Buyers cannot create listings" });
 
-      const imageUrls = (req.files || []).map(
-        file => `/uploads/listings/${file.filename}`
-      );
+      const imageUrls = await Promise.all((req.files || []).map(
+        (file) => imageStore.saveImage(file.buffer, 'listings', 'listing', file.mimetype)
+      ));
 
       const newItem = new Listing({
         ...req.body,

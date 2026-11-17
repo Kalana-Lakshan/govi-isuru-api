@@ -11,7 +11,9 @@
     "migrate:users": "node scripts/migrate-existing-users.js",
     "seed:whatsapp-demo": "node scripts/seed-whatsapp-demo.js",
     "db:inspect": "node scripts/db-inspect.js",
-    "test:bot": "cd whatsapp-bot && npm test"
+    "test:bot": "cd whatsapp-bot && npm test",
+    "create-admin": "node scripts/create-admin.js",
+    "db:backup": "node scripts/db-backup.js"
   },
   "license": "UNLICENSED",
   "type": "commonjs",
@@ -20,6 +22,7 @@
     "@google-cloud/text-to-speech": "^7.0.0",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.11.0",
     "compression": "^1.8.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",

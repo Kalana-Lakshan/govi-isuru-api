@@ -1,8 +1,5 @@
 // AI Doctor: proxies leaf photos to the AI service, adds class information, stores unknown cases for officers.
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
 const multer = require('multer');
 
 const authMiddleware = require('../middleware/authMiddleware');
@@ -10,7 +7,7 @@ const checkCredits = require('../middleware/creditMiddleware');
 const ai = require('../services/aiClient');
 const User = require('../models/User');
 const UnknownCase = require('../models/UnknownCase');
-const config = require('../config');
+const imageStore = require('../services/imageStore');
 const { present } = require('../services/aiPresenter');
 const { checkUnknownOutbreak } = require('../services/unknownOutbreakService');
 
@@ -25,7 +22,6 @@ const CROPS = new Set(['rice', 'tea', 'chili']);
 const PREDICT_COST = 25;
 // The farmer is not charged when no diagnosis could be made.
 const REFUND_STATUSES = new Set(['BAD_PHOTO', 'NOT_A_PLANT', 'UNSUPPORTED_PLANT', 'WRONG_CROP']);
-const unknownDir = path.join(config.UPLOADS_DIR, 'unknown');
 
 function requireOfficer(req, res, next) {
   if (req.user?.role === 'officer' || req.user?.role === 'admin') return next();
@@ -79,16 +75,13 @@ async function predict(req, res) {
 
   if (result.status === 'UNKNOWN_DISEASE' && result.embedding_f16_base64) {
     try {
-      fs.mkdirSync(unknownDir, { recursive: true });
-      const ext = req.file.mimetype === 'image/png' ? '.png' : '.jpg';
-      const file = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext}`;
-      fs.writeFileSync(path.join(unknownDir, file), req.file.buffer);
+      const imagePath = await imageStore.saveImage(req.file.buffer, 'unknown', 'case', req.file.mimetype);
       const user = await User.findById(req.user.id).select('district').lean();
       const doc = await UnknownCase.create({
         user: req.user.id,
         crop: result.crop || crop,
         district: req.body?.district || user?.district || '',
-        imagePath: `/uploads/unknown/${file}`,
+        imagePath,
         embedding: result.embedding_f16_base64,
         nearestKnown: result.novelty?.nearest_prototype || '',
         modelVersion: result.model?.version,

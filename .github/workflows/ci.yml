@@ -24,7 +24,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm ci --ignore-scripts
+      # the unit tests use only Node built-ins and the bot's own modules (no Baileys needed)
       - run: npm test
   docker:
     runs-on: ubuntu-latest

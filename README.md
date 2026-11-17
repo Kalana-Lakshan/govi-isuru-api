@@ -80,7 +80,7 @@ To run the full stack, start MongoDB, the AI service and the API with `docker co
 
 * **API:** Render free web service from `render.yaml` (Docker). Set `MONGO_URI`, `CORS_ORIGINS` (the Vercel URL),
   `AI_SERVICE_URL` and `AI_SERVICE_KEY`. Render generates the JWT secrets.
-* **AI service:** a second Render web service from the AI repo's `service/Dockerfile`, with `GOVI_API_KEY` set to the
+* **AI service:** a second Render web service from the AI repo's root `Dockerfile`, with `GOVI_API_KEY` set to the
   same value as `AI_SERVICE_KEY`.
 * **Database:** MongoDB Atlas free tier (M0). Allow Render's outbound IPs, or `0.0.0.0/0` with a strong password.
 * **Uploads:** stored in `UPLOADS_DIR`. On Render's free tier the disk is temporary, so mount a disk or move uploads to

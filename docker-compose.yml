@@ -7,7 +7,7 @@ services:
   ai:
     build:
       context: ../govi-isuru-ai-service
-      dockerfile: service/Dockerfile
+      dockerfile: Dockerfile
     environment:
       GOVI_API_KEY: ${AI_SERVICE_KEY:-local-ai-key}
     volumes: [ai-state:/app/state]

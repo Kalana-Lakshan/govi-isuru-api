@@ -6,3 +6,6 @@ test
 .git
 .github
 *.md
+docs
+scripts/start-local.*
+.local-logs
